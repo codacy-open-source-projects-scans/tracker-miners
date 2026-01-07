@@ -284,5 +284,272 @@ class TestOfflineConfigChanges(fixtures.TrackerMinerTest):
         self.assertResourceMissing(uri1)
 
 
+class TestMakeHomedirRecursive(fixtures.TrackerMinerTest):
+    def setUp(self):
+        self.nested_recursive_dir = os.path.join(self.non_recursive_dir, 'recursive')
+        os.makedirs(self.nested_recursive_dir, exist_ok=True)
+        self.folder_in_nested_recursive_dir = os.path.join(self.nested_recursive_dir, 'folder1')
+        os.makedirs(self.folder_in_nested_recursive_dir, exist_ok=True)
+        self.nested_non_recursive_dir = os.path.join(self.non_recursive_dir, 'non-recursive')
+        os.makedirs(self.nested_non_recursive_dir, exist_ok=True)
+        self.folder_in_nested_non_recursive_dir = os.path.join(self.nested_non_recursive_dir, 'folder2')
+        os.makedirs(self.folder_in_nested_non_recursive_dir, exist_ok=True)
+        super(TestMakeHomedirRecursive, self).setUp()
+
+
+    def config(self):
+        settings = {
+            "org.freedesktop.Tracker3.Miner.Files": {
+                "index-recursive-directories": GLib.Variant.new_strv(
+                    [self.nested_recursive_dir]
+                ),
+                "index-single-directories": GLib.Variant.new_strv(
+                    [self.non_recursive_dir, self.nested_non_recursive_dir]
+                ),
+            }
+        }
+        return settings
+
+
+    def __get_index_folder(self, filepath):
+        result = self.tracker.query(
+            """
+          SELECT DISTINCT ?p WHERE {
+              ?u a nfo:FileDataObject ;
+                 nie:url \"%s\" ;
+                 nie:dataSource/nie:isStoredAs ?p
+          }
+          """
+            % (self.uri(filepath))
+        )
+        self.assertEqual(len(result), 1)
+        return result[0][0]
+
+
+    def __list_index_folders(self):
+        return self.tracker.query(
+            """
+            SELECT DISTINCT ?u WHERE {
+              ?root a tracker:IndexedFolder;
+                nie:isStoredAs ?u .
+            }
+            """
+        )
+
+
+    def test_make_homedir_recursive(self):
+        filename = "test-non-recursive/file1.txt"
+        rec_filename = "test-non-recursive/recursive/folder1/file2.txt"
+        rec_filename2 = "test-non-recursive/non-recursive/folder2/file3.txt"
+        non_rec_filename = "test-non-recursive/non-recursive/file4.txt"
+
+        with open(self.path(rec_filename2), "w") as f:
+            f.write(rec_filename2)
+
+        with self.await_document_inserted(self.path(filename)):
+            with open(self.path(filename), "w") as f:
+                f.write(filename)
+
+        self.assertEqual(
+            self.__get_index_folder(self.path(filename)),
+            self.uri('test-non-recursive'))
+
+        with self.await_document_inserted(self.path(rec_filename)):
+            with open(self.path(rec_filename), "w") as f:
+                f.write(rec_filename)
+
+        self.assertEqual(
+            self.__get_index_folder(self.path(rec_filename)),
+            self.uri('test-non-recursive/recursive'))
+
+        with self.await_document_inserted(self.path(non_rec_filename)):
+            with open(self.path(non_rec_filename), "w") as f:
+                f.write(non_rec_filename)
+
+        self.assertEqual(
+            self.__get_index_folder(self.path(non_rec_filename)),
+            self.uri('test-non-recursive/non-recursive'))
+
+        # This file should be initially not indexed
+        self.assertResourceMissing(self.uri(rec_filename2))
+
+        roots = self.__list_index_folders()
+        self.assertEqual(len(roots), 3)
+
+        # Make the base dir the only folder indexed, recursively
+        dconf = self.sandbox.get_dconf_client()
+
+        # The file that was not indexed previously, should be now
+        with self.await_document_inserted(self.path(rec_filename2)):
+            self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-recursive-directories', GLib.Variant.new_strv([self.non_recursive_dir]))
+
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-single-directories', GLib.Variant.new_strv([]))
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+        self.ensure_document_inserted(self.path(filename))
+        self.ensure_document_inserted(self.path(rec_filename))
+        self.ensure_document_inserted(self.path(rec_filename2))
+        self.ensure_document_inserted(self.path(non_rec_filename))
+
+        self.assertEqual(
+            self.__get_index_folder(self.path(filename)),
+            self.uri('test-non-recursive'))
+        self.assertEqual(
+            self.__get_index_folder(self.path(rec_filename)),
+            self.uri('test-non-recursive'))
+        self.assertEqual(
+            self.__get_index_folder(self.path(rec_filename2)),
+            self.uri('test-non-recursive'))
+        self.assertEqual(
+            self.__get_index_folder(self.path(non_rec_filename)),
+            self.uri('test-non-recursive'))
+
+        roots = self.__list_index_folders()
+        self.assertEqual(roots, [[self.uri(self.non_recursive_dir)]])
+        self.assertEqual(len(roots), 1)
+
+
+class TestOfflineConfigMount(fixtures.TrackerMinerRemovableMediaTest):
+    """Test configuration with (non-)removable mounts"""
+
+    def config(self):
+        settings = super(TestOfflineConfigMount, self).config()
+        settings["org.freedesktop.Tracker3.Miner.Files"][
+            "index-removable-devices"
+        ] = GLib.Variant.new_boolean(False)
+        return settings
+
+    def setUp(self):
+        super(TestOfflineConfigMount, self).setUp()
+        self.device_path = pathlib.Path(self.workdir).joinpath("mount-1")
+
+
+    def test_non_removable_in_index_single_directories(self):
+        self.device_path.mkdir()
+        path = self.device_path.joinpath("file1.txt")
+        path.write_text("Foo bar baz")
+        self.add_removable_device(self.device_path, MountFlags.NON_REMOVABLE)
+
+        dconf = self.sandbox.get_dconf_client()
+
+        with self.await_document_inserted(path):
+            self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-single-directories', GLib.Variant.new_strv([str(self.device_path)]))
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+        self.assertResourceExists(path.as_uri())
+        resource_id = self.tracker.get_content_resource_id(path.as_uri())
+
+        with self.tracker.await_delete(
+            fixtures.DOCUMENTS_GRAPH, resource_id, timeout=cfg.AWAIT_TIMEOUT
+        ):
+            self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-single-directories', GLib.Variant.new_strv([]))
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+        self.assertResourceMissing(path.as_uri())
+
+
+    def test_preconfigured_non_removable_in_index_single_directories(self):
+        dconf = self.sandbox.get_dconf_client()
+
+        self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+        dconf.write (
+            'org.freedesktop.Tracker3.Miner.Files',
+            'index-single-directories', GLib.Variant.new_strv([str(self.device_path)]))
+
+        with self.await_insert_dir(self.device_path):
+            self.device_path.mkdir()
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+            self.add_removable_device(self.device_path, MountFlags.NON_REMOVABLE)
+
+        self.assertResourceExists(self.device_path.as_uri())
+        resource_id = self.tracker.get_resource_id_by_uri(self.device_path.as_uri())
+
+        self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+
+        with self.tracker.await_delete(
+            fixtures.FILESYSTEM_GRAPH, resource_id, timeout=cfg.AWAIT_TIMEOUT
+        ):
+            self.device_path.rmdir()
+            # The new miner instance will be already unaware of the "mount"
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+        self.assertResourceMissing(self.device_path.as_uri())
+
+
+    def test_non_removable_in_index_recursive_directories(self):
+        path = self.device_path.joinpath("dir/file1.txt")
+        path.parent.mkdir(parents=True)
+        path.write_text("Foo bar baz")
+        self.add_removable_device(self.device_path, MountFlags.NON_REMOVABLE)
+
+        dconf = self.sandbox.get_dconf_client()
+
+        with self.await_document_inserted(path):
+            self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-recursive-directories', GLib.Variant.new_strv([self.indexed_dir, str(self.device_path)]))
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+        self.assertResourceExists(path.as_uri())
+        resource_id = self.tracker.get_content_resource_id(path.as_uri())
+
+        with self.tracker.await_delete(
+            fixtures.DOCUMENTS_GRAPH, resource_id, timeout=cfg.AWAIT_TIMEOUT
+        ):
+            self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+            dconf.write (
+                'org.freedesktop.Tracker3.Miner.Files',
+                'index-recursive-directories', GLib.Variant.new_strv([self.indexed_dir]))
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+
+    def test_preconfigured_non_removable_in_index_recursive_directories(self):
+        dconf = self.sandbox.get_dconf_client()
+
+        self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+        dconf.write (
+            'org.freedesktop.Tracker3.Miner.Files',
+            'index-recursive-directories',
+            GLib.Variant.new_strv([self.indexed_dir, str(self.device_path)]))
+
+        with self.await_insert_dir(self.device_path):
+            self.device_path.mkdir()
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+            self.add_removable_device(self.device_path, MountFlags.NON_REMOVABLE)
+
+        self.assertResourceExists(self.device_path.as_uri())
+        resource_id = self.tracker.get_content_resource_id(self.device_path.as_uri())
+
+        self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+
+        with self.tracker.await_delete(
+            fixtures.FILESYSTEM_GRAPH, resource_id, timeout=cfg.AWAIT_TIMEOUT
+        ):
+            self.device_path.rmdir()
+            # The new miner instance will be already unaware of the "mount"
+            self.miner_fs = MinerFsHelper(self.sandbox.get_session_bus_connection())
+            self.miner_fs.start()
+
+
 if __name__ == "__main__":
     fixtures.tracker_test_main()
