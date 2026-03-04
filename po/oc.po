@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tracker master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/localsearch/-/issues\n"
-"POT-Creation-Date: 2025-10-21 16:05+0000\n"
-"PO-Revision-Date: 2025-10-25 13:20+0200\n"
+"POT-Creation-Date: 2026-02-25 08:49+0000\n"
+"PO-Revision-Date: 2026-02-28 07:26+0100\n"
 "Last-Translator: Quentin PAGÈS\n"
 "Language-Team: Tot En Òc\n"
 "Language: oc\n"
@@ -28,11 +28,11 @@ msgstr "Nombre maximum d'octets UTF-8 d'extraire."
 
 #: data/org.freedesktop.Tracker.Extract.gschema.xml:30
 msgid "Text file allowlist"
-msgstr ""
+msgstr "Fichièr tèxte de lista blanca"
 
 #: data/org.freedesktop.Tracker.Extract.gschema.xml:31
 msgid "Filename patterns for plain text documents that should be indexed"
-msgstr ""
+msgstr "Motiu per lo nom dels fichièrs tèxte que devon èsser indexats"
 
 #: data/org.freedesktop.Tracker.Extract.gschema.xml:37
 msgid "Wait for FS miner to be done before extracting"
@@ -95,8 +95,6 @@ msgid "Crawling interval"
 msgstr "Interval de reïndexacion"
 
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:51
-#, fuzzy
-#| msgid "Removable devices' data permanence threshold"
 msgid "Removable devices’ data permanence threshold"
 msgstr "Sulhet de persisténcia de las donadas dels mèdias amovibles"
 
@@ -107,7 +105,7 @@ msgstr "Activar la susvelhança"
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:59
 msgid "Set to false to completely disable any file monitoring"
 msgstr ""
-"Definir a fals (false) per desactivar completament tota susvelhança de "
+"Definir a fals (false) per desactivar complètament tota susvelhança de "
 "fichièr"
 
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:64
@@ -140,22 +138,16 @@ msgstr "Repertòris d'indexar recursivament"
 #. Translators: Do NOT translate the directories names in capital. Those
 #. are keys used by Tracker.
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:91
-#, fuzzy
-#| msgid ""
-#| "List of directories to index recursively, Special values include: "
-#| "&amp;DESKTOP, &amp;DOCUMENTS, &amp;DOWNLOAD, &amp;MUSIC, &amp;PICTURES, "
-#| "&amp;PUBLIC_SHARE, &amp;TEMPLATES, &amp;VIDEOS. See /etc/xdg/user-"
-#| "dirs.defaults and $HOME/.config/user-dirs.default"
 msgid ""
 "List of directories to index recursively, Special values include: "
 "‘&DESKTOP’, ‘&DOCUMENTS’, ‘&DOWNLOAD’, ‘&MUSIC’, ‘&PICTURES’, "
 "‘&PUBLIC_SHARE’, ‘&TEMPLATES’, ‘&VIDEOS’. See /etc/xdg/user-dirs.defaults "
 "and $HOME/.config/user-dirs.default"
 msgstr ""
-"Lista de repertòris d'indexar recursivament. Certanas valors an una "
-"significacion particulara : &amp;DESKTOP, &amp;DOCUMENTS, &amp;DOWNLOAD, "
-"&amp;MUSIC, &amp;PICTURES, &amp;PUBLIC_SHARE, &amp;TEMPLATES, &amp;VIDEOS. "
-"Veire /etc/xdg/user-dirs.defaults e $HOME/.config/user-dirs.default"
+"Lista dels repertòris d'indexar recursivament, Las valors especialas "
+"incluson : ‘&DESKTOP’, ‘&DOCUMENTS’, ‘&DOWNLOAD’, ‘&MUSIC’, ‘&PICTURES’, "
+"‘&PUBLIC_SHARE’, ‘&TEMPLATES’, ‘&VIDEOS’. Vejatz /etc/xdg/user-dirs.defaults "
+"e $HOME/.config/user-dirs.default"
 
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:102
 msgid "Directories to index non-recursively"
@@ -164,23 +156,16 @@ msgstr "Repertòris d'indexar de manièra non recursiva"
 #. Translators: Do NOT translate the directories names in capital. Those
 #. are keys used by Tracker.
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:105
-#, fuzzy
-#| msgid ""
-#| "List of directories to index without inspecting subfolders, Special "
-#| "values include: &amp;DESKTOP, &amp;DOCUMENTS, &amp;DOWNLOAD, &amp;MUSIC, "
-#| "&amp;PICTURES, &amp;PUBLIC_SHARE, &amp;TEMPLATES, &amp;VIDEOS. See /etc/"
-#| "xdg/user-dirs.defaults and $HOME/.config/user-dirs.default"
 msgid ""
 "List of directories to index without inspecting subfolders, Special values "
 "include: ‘&DESKTOP’, ‘&DOCUMENTS’, ‘&DOWNLOAD’, ‘&MUSIC’, ‘&PICTURES’, "
 "‘&PUBLIC_SHARE’, ‘&TEMPLATES’, ‘&VIDEOS’. See /etc/xdg/user-dirs.defaults "
 "and $HOME/.config/user-dirs.default"
 msgstr ""
-"Lista de repertòris d'indexar sens prene en compte los sosdorsièrs. Certanas "
-"valors an una significacion particulara : &amp;DESKTOP, &amp;DOCUMENTS, "
-"&amp;DOWNLOAD, &amp;MUSIC, &amp;PICTURES, &amp;PUBLIC_SHARE, &amp;TEMPLATES, "
-"&amp;VIDEOS. Veire /etc/xdg/user-dirs.defaults e $HOME/.config/user-"
-"dirs.default"
+"Lista dels repertòris d'indexar sens inspectar los sosdorsièrs. Las valors "
+"especialas incluson : ‘&DESKTOP’, ‘&DOCUMENTS’, ‘&DOWNLOAD’, ‘&MUSIC’, "
+"‘&PICTURES’, ‘&PUBLIC_SHARE’, ‘&TEMPLATES’, ‘&VIDEOS’. Vejatz /etc/xdg/user-"
+"dirs.defaults e $HOME/.config/user-dirs.default"
 
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:116
 msgid "Ignored files"
@@ -203,48 +188,40 @@ msgid "Ignored directories with content"
 msgstr "Repertòris ignorats segon lor contengut"
 
 #: data/org.freedesktop.Tracker.Miner.Files.gschema.xml:129
-#, fuzzy
-#| msgid "Avoid any directory containing a file blacklisted here"
 msgid "Avoid any directory containing a file blocklisted here"
-msgstr "Ignorar tot repertòri contenant un fichièr sus aquesta lista negra"
+msgstr "Ignorar tot repertòri contenent un fichièr sus aquesta lista negra"
 
 #: src/cli/main.c:68
 msgid "Show help on subcommands"
-msgstr ""
+msgstr "Afichar l’ajuda de las joscomandas"
 
 #: src/cli/main.c:69
-#, fuzzy
-#| msgid "Metadata extractor"
 msgid "Show metadata extractor output"
-msgstr "Extractor de metadonadas"
+msgstr "Afichar la sortida de l'extractor de metadonadas"
 
-#: src/cli/main.c:70 src/cli/tracker-index.c:374
+#: src/cli/main.c:70 src/cli/tracker-index.c:382
 msgid "List and change indexed folders"
-msgstr ""
+msgstr "Listar e cambiar los dossièrs indexats"
 
-#: src/cli/main.c:71 src/cli/tracker-info.c:540
+#: src/cli/main.c:71 src/cli/tracker-info.c:533
 msgid "Retrieve information available for files and resources"
-msgstr ""
+msgstr "Recuperar las informacions disponiblas pels fichièrs e las ressorsas"
 
 #: src/cli/main.c:72 src/cli/tracker-inhibit.c:98
 msgid "Inhibit indexing temporarily"
-msgstr ""
+msgstr "Inibir l'indexacion temporàriament"
 
 #: src/cli/main.c:73 src/cli/tracker-reset.c:202
-#, fuzzy
-#| msgid "Reset Indexed Data"
 msgid "Erase the indexed data"
-msgstr "Reïnicializar los donadas indexadas"
+msgstr "Espotir las donadas indexadas"
 
-#: src/cli/main.c:74 src/cli/tracker-search.c:397
+#: src/cli/main.c:74 src/cli/tracker-search.c:418
 msgid "Search for content"
 msgstr "Recercar dins lo contengut"
 
-#: src/cli/main.c:75 src/cli/tracker-status.c:748
-#, fuzzy
-#| msgid "Show statistics about the data stored"
+#: src/cli/main.c:75 src/cli/tracker-status.c:727
 msgid "Provide status and statistics on the data indexed"
-msgstr "Afichar d'estatisticas a prepaus de las donadas enregistradas"
+msgstr "Fornir l'estat e las estatisticas de las donadas indexadas"
 
 #: src/cli/main.c:76 src/cli/tracker-tag.c:414
 msgid "Add, remove and list tags"
@@ -252,160 +229,149 @@ msgstr "Apondre, suprimir e listar las etiquetas"
 
 #: src/cli/main.c:77
 msgid "Sandbox for a testing environment"
-msgstr ""
+msgstr "Espaci isolat per un environament de tèst"
 
 #: src/cli/main.c:122
-#, fuzzy
-#| msgid "Available tracker commands are:"
 msgid "Available localsearch commands are:"
-msgstr "Las comandas tracker disponiblas son  :"
+msgstr "Las comandas localsearch disponiblas son  :"
 
 #: src/cli/main.c:141
-#, fuzzy
-#| msgid "See 'tracker help <command>' to read about a specific subcommand."
 msgid "See “localsearch help <command>” to read about a specific subcommand."
 msgstr ""
-"Consultatz « tracker help <command> » per d'informacions sus una soscomanda "
-"especifica."
+"Consultatz « localsearch help <command> » per d'informacions sus una "
+"soscomanda especifica."
 
 #: src/cli/main.c:184
-#, fuzzy, c-format
-#| msgid "'%s' is not a tracker command. See 'tracker --help'"
+#, c-format
 msgid "“%s” is not a localsearch command. See “localsearch --help”"
-msgstr "« %s » es pas una comanda tracker. Consultatz « tracker --help »"
-
-#: src/cli/tracker-extract.c:42 src/cli/tracker-info.c:74
-#: src/extractor/tracker-main.c:81
-msgid "Output results format: “turtle”, “trig” or “json-ld”"
 msgstr ""
+"« %s » es pas una comanda localsearch. Consultatz « localsearch --help »"
 
-#: src/cli/tracker-extract.c:43 src/cli/tracker-info.c:75
+#: src/cli/tracker-cli-utils.c:179 src/cli/tracker-status.c:376
+msgid "Message"
+msgstr "Messatge"
+
+#: src/cli/tracker-extract.c:44 src/cli/tracker-info.c:75
 #: src/extractor/tracker-main.c:82
+msgid "Output results format: “turtle”, “trig” or “json-ld”"
+msgstr "Format de sortida dels resultats : « turtle », « trig » o « json-ld »"
+
+#: src/cli/tracker-extract.c:45 src/cli/tracker-info.c:76
+#: src/extractor/tracker-main.c:83
 msgid "FORMAT"
 msgstr "FORMAT"
 
-#: src/cli/tracker-extract.c:45 src/cli/tracker-extract.c:46
+#: src/cli/tracker-extract.c:47 src/cli/tracker-extract.c:48
 #: src/cli/tracker-index.c:60 src/cli/tracker-index.c:61
-#: src/cli/tracker-info.c:80 src/cli/tracker-info.c:81
-#: src/cli/tracker-reset.c:52 src/extractor/tracker-main.c:75
-#: src/indexer/tracker-application.c:58
+#: src/cli/tracker-info.c:84 src/cli/tracker-info.c:85
+#: src/cli/tracker-reset.c:52 src/extractor/tracker-main.c:76
+#: src/extractor/tracker-main.c:91 src/indexer/tracker-application.c:62
 msgid "FILE"
 msgstr "FICHIÈR"
 
-#: src/cli/tracker-extract.c:90
-#, fuzzy
-#| msgid "Could not retrieve tracker-store status"
+#: src/cli/tracker-extract.c:94
 msgid "Could not run tracker-extract: "
-msgstr "Impossible de recuperar l'estat de tracker-store"
+msgstr "Impossible d'executar tracker-extract : "
 
-#: src/cli/tracker-extract.c:123
+#: src/cli/tracker-extract.c:131
 msgid "Extract metadata from a file"
 msgstr "Extraire las metadonadas d’un fichièr"
 
-#: src/cli/tracker-extract.c:130 src/cli/tracker-index.c:379
-#: src/cli/tracker-info.c:547 src/cli/tracker-inhibit.c:113
-#: src/cli/tracker-reset.c:207 src/cli/tracker-search.c:410
-#: src/cli/tracker-status.c:753 src/cli/tracker-tag.c:419
+#: src/cli/tracker-extract.c:138 src/cli/tracker-index.c:387
+#: src/cli/tracker-info.c:540 src/cli/tracker-inhibit.c:113
+#: src/cli/tracker-reset.c:207 src/cli/tracker-search.c:431
+#: src/cli/tracker-status.c:732 src/cli/tracker-tag.c:419
 msgid "Unrecognized options"
 msgstr "Opcions pas reconegudas"
 
 #: src/cli/tracker-index.c:51
 msgid "Adds FILE as an indexed location"
-msgstr ""
+msgstr "Ajusta FILE coma un emplaçament indexat"
 
 #: src/cli/tracker-index.c:54
 msgid "Removes FILE from indexed locations"
-msgstr ""
+msgstr "Suprimís FILE dels emplaçaments indexats"
 
 #: src/cli/tracker-index.c:57
 msgid "Makes indexing recursive"
 msgstr "Far venir l'indexacion recursiva"
 
-#: src/cli/tracker-index.c:195
+#: src/cli/tracker-index.c:205
 #, c-format
 msgid "“%s” is not a directory"
 msgstr "« %s » es pas un repertòri"
 
 #. TRANSLATORS: These are commandline options
-#: src/cli/tracker-index.c:273
+#: src/cli/tracker-index.c:281
 msgid "Either --add or --remove must be provided"
-msgstr ""
+msgstr "Cal fornir --add o --remove"
 
 #. TRANSLATORS: These are commandline options
-#: src/cli/tracker-index.c:277
+#: src/cli/tracker-index.c:285
 msgid "--add and --remove are mutually exclusive"
-msgstr ""
+msgstr "--add e --remove son mutualament exclusius"
 
 #. TRANSLATORS: These are commandline options
-#: src/cli/tracker-index.c:287
+#: src/cli/tracker-index.c:295
 msgid "--recursive requires --add"
-msgstr ""
+msgstr "--recursive requerís --add"
 
-#: src/cli/tracker-index.c:345 src/cli/tracker-status.c:347
+#: src/cli/tracker-index.c:353 src/cli/tracker-status.c:375
 msgid "Path"
 msgstr "Emplaçament"
 
-#: src/cli/tracker-index.c:346
+#: src/cli/tracker-index.c:354
 msgid "Recursive"
 msgstr "Recursiva"
 
-#: src/cli/tracker-index.c:388
+#: src/cli/tracker-index.c:396
 msgid "Please specify one or more locations to index."
-msgstr ""
+msgstr "Volgatz especificar un o mai d’un emplaçament a indexar."
 
-#: src/cli/tracker-info.c:66
-#, fuzzy
-#| msgid "Show full namespaces (i.e. don't use nie:title, use full URLs)"
+#: src/cli/tracker-info.c:67
 msgid "Show full namespaces (i.e. don’t use nie:title, use full URLs)"
 msgstr ""
-"Afichar l'espaci de noms complet (ne pas utilizar nie:title, mas puslèu "
-"d'URL complets)"
+"Afichar l'espaci de noms complèt (ne pas utilizar nie:title, mas puslèu "
+"d'URL complèts)"
 
-#: src/cli/tracker-info.c:70
+#: src/cli/tracker-info.c:71
 msgid "Show plain text content if available for resources"
 msgstr "Afichar lo contengut de tèxte brut se es disponible per las ressorsas"
 
-#: src/cli/tracker-info.c:77
-#, fuzzy
-#| msgid "Checks if FILE is eligible for being mined based on configuration"
+#: src/cli/tracker-info.c:78
 msgid "Checks if FILE is eligible for being indexed"
-msgstr ""
-"Verifica se FICHIÈR es susceptible d'èsser extrait en foncion de la "
-"configuracion"
+msgstr "Verifica se FICHIÈR es susceptible d'èsser indexat"
 
-#: src/cli/tracker-info.c:349
-msgid "Error message"
-msgstr "Messatge d'error"
+#: src/cli/tracker-info.c:81 src/cli/tracker-search.c:189
+#: src/cli/tracker-status.c:80
+msgid "Removable device mount point to query"
+msgstr "Ponch de montatge del periferic amovible d'interrogar"
 
-#: src/cli/tracker-info.c:374 src/cli/tracker-search.c:341
-#: src/cli/tracker-status.c:129 src/cli/tracker-status.c:248
-#, fuzzy
-#| msgid "Could not establish a connection to Tracker"
+#: src/cli/tracker-info.c:357 src/cli/tracker-search.c:373
+#: src/cli/tracker-status.c:158 src/cli/tracker-status.c:276
 msgid "Could not connect to LocalSearch"
-msgstr "Impossible d'establir una connexion cap a Tracker"
+msgstr "Impossible d'establir una connexion cap a LocalSearch"
 
-#: src/cli/tracker-info.c:419
+#: src/cli/tracker-info.c:405
 msgid "Unable to retrieve data for URI"
 msgstr "Impossible d'obténer las donadas de l'URI"
 
-#: src/cli/tracker-info.c:429
+#: src/cli/tracker-info.c:412
 msgid "No metadata available for that URI"
 msgstr "Cap de metadonada pas disponibla per aqueste URI"
 
-#: src/cli/tracker-info.c:434 src/cli/tracker-info.c:506
-#, fuzzy
-#| msgid "Could not get all tags"
+#: src/cli/tracker-info.c:422 src/cli/tracker-info.c:499
 msgid "Could not get eligible status: "
-msgstr "Impossible d'obténer totas las etiquetas"
+msgstr "Impossible d'obténer l’estatut de l’eligibilitat : "
 
-#: src/cli/tracker-info.c:460 src/extractor/tracker-main.c:184
+#: src/cli/tracker-info.c:451 src/extractor/tracker-main.c:189
 #, c-format
 msgid "Unsupported serialization format “%s”\n"
-msgstr ""
+msgstr "Format de serializacion « %s » pas pres en carga\n"
 
 #: src/cli/tracker-inhibit.c:39
 msgid "List inhibitions"
-msgstr ""
+msgstr "Listar las inibicions"
 
 #: src/cli/tracker-inhibit.c:45
 msgid "command"
@@ -425,19 +391,15 @@ msgstr "Rason"
 
 #: src/cli/tracker-inhibit.c:136
 msgid "Indexing inhibited through command line"
-msgstr ""
+msgstr "Indexacion enebida via la linha de comanda"
 
 #: src/cli/tracker-inhibit.c:160
-#, fuzzy
-#| msgid "Failed to initialize data manager"
 msgid "Failed to inhibit indexer"
-msgstr "Impossible d'inicializar lo gestionari de donadas"
+msgstr "Fracàs de l’inibicion de l’indexador"
 
 #: src/cli/tracker-process.c:89
-#, fuzzy
-#| msgid "Could not (re)index file"
 msgid "Could not terminate indexer"
-msgstr "Impossible de (re)indexar lo fichièr"
+msgstr "Impossible de terminar l’indexador"
 
 #: src/cli/tracker-process.c:92
 msgid "Indexer process terminated"
@@ -445,12 +407,14 @@ msgstr "Processus d’indexacion terminat"
 
 #: src/cli/tracker-reset.c:48
 msgid "Remove filesystem indexer database"
-msgstr ""
+msgstr "Suprimir la basa de donadas de l'indexador del sistèma de fichièrs"
 
 #: src/cli/tracker-reset.c:51
 msgid ""
 "Erase indexed information about a file, works recursively for directories"
 msgstr ""
+"Escafar las informacions indexadas d'un fichièr, fonciona recursivament pels "
+"repertòris"
 
 #. Now, delete the element recursively
 #: src/cli/tracker-reset.c:95
@@ -461,10 +425,14 @@ msgstr "Supression…"
 msgid ""
 "The indexed data for this file has been deleted and will be reindexed again."
 msgstr ""
+"Las donadas indexadas d'aqueste fichièr son estadas suprimidas e seràn "
+"tornarmai indexadas."
 
 #: src/cli/tracker-reset.c:223
 msgid "The LocalSearch indexed data is about to be deleted, proceed? [y/N]"
 msgstr ""
+"Las donadas indexadas de LocalSearch son a mand d'èsser suprimidas, "
+"contunhar ? [o/N]"
 
 #. TRANSLATORS: this is our test for a [y|N] question in the command line.
 #. * A partial or full match will be considered an affirmative answer,
@@ -474,194 +442,174 @@ msgstr ""
 msgid "yes"
 msgstr "òc"
 
-#: src/cli/tracker-search.c:99
+#: src/cli/tracker-search.c:115
 msgid "Results"
 msgstr "Resultats"
 
-#: src/cli/tracker-search.c:100 src/cli/tracker-search.c:101
-#: src/cli/tracker-search.c:103 src/cli/tracker-search.c:106
-#: src/cli/tracker-search.c:107 src/cli/tracker-search.c:108
+#: src/cli/tracker-search.c:116 src/cli/tracker-search.c:117
+#: src/cli/tracker-search.c:119 src/cli/tracker-search.c:122
+#: src/cli/tracker-search.c:123 src/cli/tracker-search.c:124
 msgid "Files"
 msgstr "Fichièrs"
 
-#: src/cli/tracker-search.c:102
+#: src/cli/tracker-search.c:118
 msgid "Folders"
-msgstr "Dorsièrs"
+msgstr "Dossièrs"
 
-#: src/cli/tracker-search.c:104
+#: src/cli/tracker-search.c:120
 msgid "Albums"
 msgstr "Albums"
 
-#: src/cli/tracker-search.c:105
+#: src/cli/tracker-search.c:121
 msgid "Artists"
 msgstr "Artistas"
 
-#: src/cli/tracker-search.c:116
+#: src/cli/tracker-search.c:132
 msgid "Search for files"
 msgstr "Recèrca dels fichièrs"
 
-#: src/cli/tracker-search.c:120
-msgid "Search for folders"
-msgstr "Recèrca dels dorsièrs"
-
-#: src/cli/tracker-search.c:124
-#, fuzzy
-#| msgid "Search for video files"
-msgid "Search for audio files"
-msgstr "Recèrca dels fichièrs vidèo"
-
-#: src/cli/tracker-search.c:128
-#, fuzzy
-#| msgid "Search for music files"
-msgid "Search for music albums"
-msgstr "Recèrca dels fichièrs musicals"
-
-#: src/cli/tracker-search.c:132
-#, fuzzy
-#| msgid "Search for music files"
-msgid "Search for music artists"
-msgstr "Recèrca dels fichièrs musicals"
-
 #: src/cli/tracker-search.c:136
+msgid "Search for folders"
+msgstr "Recèrca dels dossièrs"
+
+#: src/cli/tracker-search.c:140
+msgid "Search for audio files"
+msgstr "Recèrca dels fichièrs àudio"
+
+#: src/cli/tracker-search.c:144
+msgid "Search for music albums"
+msgstr "Recèrca d’albums musicals"
+
+#: src/cli/tracker-search.c:148
+msgid "Search for music artists"
+msgstr "Recèrca d’artistas de musica"
+
+#: src/cli/tracker-search.c:152
 msgid "Search for image files"
 msgstr "Recèrca dels fichièrs imatge"
 
-#: src/cli/tracker-search.c:140
+#: src/cli/tracker-search.c:156
 msgid "Search for video files"
 msgstr "Recèrca dels fichièrs vidèo"
 
-#: src/cli/tracker-search.c:144
+#: src/cli/tracker-search.c:160
 msgid "Search for document files"
 msgstr "Recèrca dels documents"
 
-#: src/cli/tracker-search.c:148
-#, fuzzy
-#| msgid "Search for image files"
+#: src/cli/tracker-search.c:164
 msgid "Search for software files"
-msgstr "Recèrca dels fichièrs imatge"
+msgstr "Recèrca dels fichièrs logicials"
 
-#: src/cli/tracker-search.c:157 src/cli/tracker-tag.c:87
+#: src/cli/tracker-search.c:173 src/cli/tracker-tag.c:87
 msgid "Limit the number of results shown"
 msgstr "Limita lo nombre de resultats afichats"
 
-#: src/cli/tracker-search.c:161 src/cli/tracker-tag.c:91
+#: src/cli/tracker-search.c:177 src/cli/tracker-tag.c:91
 msgid "Offset the results"
 msgstr "Decalar los resultats"
 
-#: src/cli/tracker-search.c:165
+#: src/cli/tracker-search.c:181
 msgid "Show URNs for results"
-msgstr ""
+msgstr "Afichar las URN pels resultats"
 
-#: src/cli/tracker-search.c:169
+#: src/cli/tracker-search.c:185
 msgid "Return all non-existing matches too (i.e. include unmounted volumes)"
 msgstr ""
 "Renvia tanben totas las correspondéncias inexistentas (coma los volums pas "
 "montats)"
 
-#: src/cli/tracker-search.c:173
+#: src/cli/tracker-search.c:193
 msgid "Show help options"
 msgstr "Aficha las opcions de l'ajuda"
 
-#: src/cli/tracker-search.c:180 src/cli/tracker-status.c:80
+#: src/cli/tracker-search.c:200 src/cli/tracker-status.c:85
 msgid "search terms"
 msgstr "tèrmes a recercar"
 
-#: src/cli/tracker-search.c:181
+#: src/cli/tracker-search.c:201
 msgid "TERMS"
 msgstr "TÈRMES"
 
-#: src/cli/tracker-status.c:67
+#: src/cli/tracker-status.c:68
 msgid "Follow status changes as they happen"
 msgstr "Seguís los cambiaments d'estat quand se produson"
 
-#: src/cli/tracker-status.c:71
+#: src/cli/tracker-status.c:72
 msgid "Show statistics for current index / data set"
 msgstr "Afichar las estatisticas del paquet de donadas indexat actual"
 
-#: src/cli/tracker-status.c:75
+#: src/cli/tracker-status.c:76
 msgid ""
 "Watch changes to the database in real time (e.g. resources or files being "
 "added)"
 msgstr ""
-"Susvelha en temps real las modificacions faitas a la basa de donadas (per "
+"Susvelha en temps real las modificacions fachas a la basa de donadas (per "
 "ex. apondon de fonts o de fichièrs)"
 
-#: src/cli/tracker-status.c:81
+#: src/cli/tracker-status.c:86
 msgid "EXPRESSION"
 msgstr "EXPRESSION"
 
-#: src/cli/tracker-status.c:143 src/cli/tracker-status.c:267
-#: src/cli/tracker-status.c:289
-#, fuzzy
-#| msgid "Could not get Tracker statistics"
+#: src/cli/tracker-status.c:172 src/cli/tracker-status.c:295
+#: src/cli/tracker-status.c:317
 msgid "Could not get LocalSearch statistics"
-msgstr "Impossible d'obténer las estatisticas de Tracker"
+msgstr "Impossible d'obténer las estatisticas de LocalSearch"
 
-#: src/cli/tracker-status.c:348 src/cli/tracker-status.c:511
-msgid "Message"
-msgstr "Messatge"
-
-#: src/cli/tracker-status.c:406
+#: src/cli/tracker-status.c:434
 #, c-format
 msgid "Currently indexed"
 msgstr "Actualament indexat"
 
-#: src/cli/tracker-status.c:409 src/cli/tracker-tag.c:180
+#: src/cli/tracker-status.c:437 src/cli/tracker-tag.c:180
 #, c-format
 msgid "%d file"
 msgid_plural "%d files"
 msgstr[0] "%d fichièr"
 msgstr[1] "%d fichièrs"
 
-#: src/cli/tracker-status.c:415
+#: src/cli/tracker-status.c:443
 #, c-format
 msgid "%d folder"
 msgid_plural "%d folders"
 msgstr[0] "%d dossièr"
 msgstr[1] "%d dossièrs"
 
-#: src/cli/tracker-status.c:429
+#: src/cli/tracker-status.c:457
 msgid "Remaining space on database partition"
 msgstr "Demòra de plaça sus la particion de la basa de donadas"
 
-#: src/cli/tracker-status.c:439 src/cli/tracker-status.c:645
+#: src/cli/tracker-status.c:467 src/cli/tracker-status.c:619
 msgid "Indexer is paused"
 msgstr "L'indexador es en pausa"
 
-#: src/cli/tracker-status.c:440
+#: src/cli/tracker-status.c:468
 msgid "Data is still being indexed"
 msgstr "Las donadas son en cors d'indexacion"
 
-#: src/cli/tracker-status.c:442
-#, fuzzy
-#| msgid "Indexes"
+#: src/cli/tracker-status.c:470
 msgid "Indexer is idle"
-msgstr "Indèxes"
+msgstr "L'indexador es en pausa"
 
-#: src/cli/tracker-status.c:449
+#: src/cli/tracker-status.c:477
 #, c-format
 msgid "%d recorded failure"
 msgid_plural "%d recorded failures"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d fracàs enregistrat"
+msgstr[1] "%d fracasses enregistrats"
 
-#: src/cli/tracker-status.c:533
-#, fuzzy
-#| msgid "No properties were found"
+#: src/cli/tracker-status.c:507
 msgid "No reports found"
-msgstr "Cap de proprietat es pas estada trobada"
+msgstr "Cap de rapòrt pas trobat"
 
-#: src/cli/tracker-status.c:705
+#: src/cli/tracker-status.c:684
 msgid "Could not get SPARQL connection"
 msgstr "Impossible d'establir una connexion SPARQL"
 
-#: src/cli/tracker-status.c:714
-#, fuzzy
-#| msgid "Now listening for resource updates to the database"
+#: src/cli/tracker-status.c:693
 msgid "Now listening to database updates"
-msgstr "Escota de las mesas a jorn de las fonts de la basa de donadas en cors"
+msgstr "Escota de las mesas a jorn de la basa de donadas"
 
-#: src/cli/tracker-status.c:715
+#: src/cli/tracker-status.c:694
 msgid "Press Ctrl+C to stop"
 msgstr "Quichatz sus Ctrl+C per arrestar"
 
@@ -678,8 +626,8 @@ msgstr ""
 #: src/cli/tracker-tag.c:75
 msgid "Add a tag (if FILEs are omitted, TAG is not associated with any files)"
 msgstr ""
-"Apond una etiqueta (se FICHIÈR es pas indicat, ETIQUETA ne serà attribuée a "
-"cap de fichièr)"
+"Apondre una etiqueta (se FICHIÈR es pas indicat, ETIQUETA serà pas atribuit "
+"a cap de fichièr)"
 
 #: src/cli/tracker-tag.c:76 src/cli/tracker-tag.c:80
 msgid "TAG"
@@ -740,33 +688,21 @@ msgid "Tag was removed successfully"
 msgstr "L'etiqueta es estada suprimida corrèctament"
 
 #: src/cli/tracker-tag.c:360
-#, fuzzy
-#| msgid "Could not establish a connection to Tracker"
 msgid "Could not establish a connection to LocalSearch"
-msgstr "Impossible d'establir una connexion cap a Tracker"
+msgstr "Impossible d'establir una connexion cap a LocalSearch"
 
-#: src/cli/tracker-tag.c:425
+#: src/cli/tracker-tag.c:424
 msgid "The --list option is required for --show-files"
 msgstr "L'opcion --list es obligatòria per --show-files"
 
-#: src/cli/tracker-tag.c:427
+#: src/cli/tracker-tag.c:426
 msgid "Add and delete actions can not be used together"
 msgstr ""
 "Las accions apondre e suprimir pòdon pas èsser utilizadas en meteis temps"
 
-#: src/cli/tracker-tag.c:429
+#: src/cli/tracker-tag.c:428
 msgid "The --description option can only be used with --add"
 msgstr "L'opcion --descripcion pòt pas èsser utilizada qu'amb --add"
-
-#: src/common/tracker-miner-proxy.c:349
-msgid "Cookie not recognized to resume paused miner"
-msgstr "Lo cookie es pas reconegut per reaviar lo collector en pausa"
-
-#: src/common/tracker-miner-proxy.c:406
-msgid "Pause application and reason match an already existing pause request"
-msgstr ""
-"L'aplicacion e la rason de la pausa que correspond a una requèsta de pausa "
-"existís ja"
 
 #: src/common/tracker-utils.c:101 src/common/tracker-utils.c:152
 msgid "less than one second"
@@ -824,154 +760,141 @@ msgid_plural " %2.2d seconds"
 msgstr[0] " %2.2d segonda"
 msgstr[1] " %2.2d segondas"
 
-#: src/control/tracker-main.c:61 src/extractor/tracker-main.c:89
-#: src/indexer/tracker-application.c:65 src/writeback/tracker-main.c:50
+#: src/control/tracker-main.c:61 src/extractor/tracker-main.c:94
+#: src/indexer/tracker-application.c:69 src/writeback/tracker-main.c:50
 msgid "Displays version information"
 msgstr "Aficha las informacions de version"
 
 #. Translators: this messagge will apper immediately after the
 #. * usage string - Usage: COMMAND <THIS_MESSAGE>
 #.
-#: src/control/tracker-main.c:136
-#, fuzzy
-#| msgid "- start the tracker indexer"
+#: src/control/tracker-main.c:136 src/indexer/tracker-endpoint-helper.c:77
 msgid "— start the tracker index proxy"
-msgstr "- avia l'indexador de tracker"
+msgstr "— lançar lo proxy traçador de l'indexador"
 
-#: src/extractor/tracker-main.c:74
+#: src/extractor/tracker-main.c:75
 msgid "File to extract metadata for"
 msgstr "Fichièr per lo qual extraire las metadonadas"
 
-#: src/extractor/tracker-main.c:78
+#: src/extractor/tracker-main.c:79
 msgid "MIME type for file (if not provided, this will be guessed)"
 msgstr "Tipe MIME del fichièr (serà endevinat se pas provesit)"
 
-#: src/extractor/tracker-main.c:79
+#: src/extractor/tracker-main.c:80
 msgid "MIME"
 msgstr "MIME"
 
-#: src/extractor/tracker-main.c:85
+#: src/extractor/tracker-main.c:86 src/indexer/tracker-endpoint-helper.c:40
 msgid "Socket file descriptor for peer-to-peer communication"
-msgstr ""
+msgstr "Descriptor de fichièr connector per la comunicacion de par a par"
 
-#: src/extractor/tracker-main.c:86
+#: src/extractor/tracker-main.c:87 src/indexer/tracker-endpoint-helper.c:41
 msgid "FD"
-msgstr ""
+msgstr "FD"
 
-#: src/extractor/tracker-main.c:257
+#: src/extractor/tracker-main.c:90
+msgid "Filesystem root of the extracted data"
+msgstr "Raïç del sistèma de fichièrs de las donadas extrachas"
+
+#: src/extractor/tracker-main.c:262
 msgid "No metadata or extractor modules found to handle this file"
 msgstr ""
 "Cap de modul d'extraccion gerís pas aqueste fichièr o las metadonadas son "
 "absentas"
 
-#: src/extractor/tracker-main.c:265
+#: src/extractor/tracker-main.c:270
 msgid "Metadata extraction failed"
 msgstr "Fracàs de l'extraccion de las metadonadas"
 
 #. Translators: this message will appear immediately after the
 #. usage string - Usage: COMMAND [OPTION]... <THIS_MESSAGE>
-#: src/extractor/tracker-main.c:327
-#, fuzzy
-#| msgid "- Extract file meta data"
+#: src/extractor/tracker-main.c:333
 msgid "— Extract file meta data"
-msgstr "- extrai las metadonadas del fichièr"
+msgstr "— Traire las metadonadas del fichièr"
 
-#: src/extractor/tracker-main.c:341
+#: src/extractor/tracker-main.c:347
 msgid "Filename and mime type must be provided together"
 msgstr "Lo nom de fichièr e lo tipe MIME devon èsser provesits conjuntament"
 
-#: src/indexer/tracker-application.c:53
+#: src/indexer/tracker-application.c:57
 msgid "Runs until all configured locations are indexed and then exits"
 msgstr ""
 "Fonciona fins al moment que totes los emplaçaments configurats son indexats, "
-"puèi quitte"
-
-#: src/indexer/tracker-application.c:57
-msgid "Checks if FILE is eligible for being mined based on configuration"
-msgstr ""
-"Verifica se FICHIÈR es susceptible d'èsser extrait en foncion de la "
-"configuracion"
+"puèi quita"
 
 #: src/indexer/tracker-application.c:61
-#, fuzzy
-#| msgid "Crawls and processes files on the file system"
+msgid "Checks if FILE is eligible for being mined based on configuration"
+msgstr ""
+"Verifica se FICHIÈR es susceptible d'èsser extrach en foncion de la "
+"configuracion"
+
+#: src/indexer/tracker-application.c:65
 msgid "Avoids changes in the filesystem"
-msgstr "Percor e analisa los fichièrs del sistèma de fichièrs"
+msgstr "Evita las modificacions dins lo sistèma de fichièrs"
 
-#: src/indexer/tracker-application.c:612
-#, fuzzy, c-format
-#| msgid "Data object '%s' currently exists"
+#: src/indexer/tracker-application.c:1262
+#, c-format
 msgid "Data object “%s” currently exists"
-msgstr "L'objet de donada « %s » existís ja"
+msgstr "L'objècte de donada « %s » existís ja"
 
-#: src/indexer/tracker-application.c:613
-#, fuzzy, c-format
-#| msgid "Data object '%s' currently does not exist"
+#: src/indexer/tracker-application.c:1263
+#, c-format
 msgid "Data object “%s” currently does not exist"
-msgstr "L'objet de donada « %s » existís pas encara"
+msgstr "L'objècte de donada « %s » existís pas encara"
 
-#: src/indexer/tracker-application.c:639
-#, fuzzy, c-format
-#| msgid "Directory is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1289
+#, c-format
 msgid "Parent directory “%s” is NOT eligible to be indexed (based on filters)"
 msgstr ""
-"Lo dorsièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+"Lo repertòri parent « %s » es PAS eligible per l'indexacion (segon los "
+"filtres)"
 
-#: src/indexer/tracker-application.c:645
-#, fuzzy, c-format
-#| msgid "Directory is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1295
+#, c-format
 msgid "Parent directory “%s” is NOT eligible to be indexed (hidden file)"
 msgstr ""
-"Lo dorsièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+"Lo repertòri parent « %s » es PAS eligible per l'indexacion (fichièr amagat)"
 
-#: src/indexer/tracker-application.c:651
-#, fuzzy, c-format
-#| msgid "Directory is NOT eligible to be mined (based on contents)"
+#: src/indexer/tracker-application.c:1301
+#, c-format
 msgid ""
 "Parent directory “%s” is NOT eligible to be indexed (based on content "
 "filters)"
 msgstr ""
-"Lo dorsièr es PAS susceptible d'èsser extrait (en foncion del contengut)"
+"Lo repertòri parent « %s » es PAS eligible per l'indexacion (segon lo "
+"contengut)"
 
-#: src/indexer/tracker-application.c:666
-#, fuzzy
-#| msgid "Directory is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1316
 msgid "Directory is NOT eligible to be indexed (based on filters)"
-msgstr ""
-"Lo dorsièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo repertòri es PAS eligible per l'indexacion (segon los filtres)"
 
-#: src/indexer/tracker-application.c:670
-#, fuzzy
-#| msgid "File is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1320
 msgid "File is NOT eligible to be indexed (based on filters)"
-msgstr ""
-"Lo fichièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo fichièr es PAS eligible per l'indexacion (segon los filtres)"
 
-#: src/indexer/tracker-application.c:673
-#, fuzzy
-#| msgid "File is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1323
 msgid "File is NOT eligible to be indexed (hidden file)"
-msgstr ""
-"Lo fichièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo fichièr es PAS eligible per l'indexacion (fichièr amagat)"
 
-#: src/indexer/tracker-application.c:675
-#, fuzzy
-#| msgid "File is NOT eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1325
 msgid "File is NOT eligible to be indexed (not an indexed folder)"
-msgstr ""
-"Lo fichièr es PAS susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo fichièr es PAS eligible per l'indexacion (pas un dossièr indexat)"
 
-#: src/indexer/tracker-application.c:683
-#, fuzzy
-#| msgid "Directory is eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1333
 msgid "Directory is eligible to be indexed"
-msgstr "Lo dorsièr es susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo repertòri es eligible per l'indexacion"
 
-#: src/indexer/tracker-application.c:684
-#, fuzzy
-#| msgid "File is eligible to be mined (based on rules)"
+#: src/indexer/tracker-application.c:1334
 msgid "File is eligible to be indexed"
-msgstr "Lo fichièr es susceptible d'èsser extrait (en foncion de las règlas)"
+msgstr "Lo fichièr es eligible per l'indexacion"
+
+#: src/indexer/tracker-endpoint-helper.c:36
+msgid "Database location"
+msgstr "Emplaçament de la basa de donadas"
+
+#: src/indexer/tracker-endpoint-helper.c:37
+msgid "DIR"
+msgstr "DIR"
 
 #: src/writeback/tracker-main.c:54
 msgid ""
@@ -989,10 +912,19 @@ msgstr "Desactiva la tampadura aprèp 30 segondas d'inactivitat"
 #. * usage string - Usage: COMMAND <THIS_MESSAGE>
 #.
 #: src/writeback/tracker-main.c:93
-#, fuzzy
-#| msgid "- start the tracker writeback service"
 msgid "— start the tracker writeback service"
-msgstr "- avia lo servici de reescritura de tracker"
+msgstr "— lançar lo servici de reescritura del traçador"
+
+#~ msgid "Error message"
+#~ msgstr "Messatge d'error"
+
+#~ msgid "Cookie not recognized to resume paused miner"
+#~ msgstr "Lo cookie es pas reconegut per reaviar lo collector en pausa"
+
+#~ msgid "Pause application and reason match an already existing pause request"
+#~ msgstr ""
+#~ "L'aplicacion e la rason de la pausa que correspond a una requèsta de "
+#~ "pausa existís ja"
 
 #~ msgid "All posts"
 #~ msgstr "Totes los articles"
@@ -1710,9 +1642,6 @@ msgstr "- avia lo servici de reescritura de tracker"
 
 #~ msgid "Days before deleting removable devices:"
 #~ msgstr "Nombre de jorns abans la supression dels periferics amovibles :"
-
-#~ msgid "Garbage Collection"
-#~ msgstr "Amassabrigalhas"
 
 #~ msgid "Indexing"
 #~ msgstr "Indexacion"
