@@ -1,4 +1,4 @@
-#include <tracker-common.h>
+#include "tracker-extract.h"
 
 #include <fcntl.h>
 
@@ -6,7 +6,7 @@ G_MODULE_EXPORT gboolean
 tracker_extract_get_metadata (TrackerExtractInfo  *info,
                               GError             **error)
 {
-	TrackerResource *resource;
+	g_autoptr (TrackerResource) resource = NULL;
 	g_autoptr (GError) inner_error = NULL;
 	int wait_status;
 	gboolean retval;

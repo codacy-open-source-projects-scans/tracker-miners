@@ -1,4 +1,4 @@
-#include <tracker-common.h>
+#include "tracker-extract.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@ G_MODULE_EXPORT gboolean
 tracker_extract_get_metadata (TrackerExtractInfo  *info,
                               GError             **error)
 {
-	TrackerResource *resource;
+	g_autoptr (TrackerResource) resource = NULL;
 	int fd;
 
 	/* Try to get sockets of different families/types */

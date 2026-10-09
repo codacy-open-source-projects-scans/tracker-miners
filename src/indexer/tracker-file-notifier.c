@@ -35,6 +35,7 @@ enum {
 	PROP_CONNECTION,
 	PROP_MONITOR,
 	PROP_ROOT,
+	PROP_RULES_MANAGER,
 	N_PROPS,
 };
 
@@ -78,7 +79,7 @@ typedef struct {
 	GDateTime *store_mtime;
 	GDateTime *disk_mtime;
 	gchar *extractor_hash;
-	gchar *mimetype;
+	gchar *current_hash;
 } TrackerFileData;
 
 typedef struct {
@@ -111,6 +112,7 @@ struct _TrackerFileNotifier
 	TrackerIndexingTree *indexing_tree;
 	TrackerSparqlConnection *connection;
 
+	TrackerExtractRulesManager *rules_manager;
 	TrackerMonitor *monitor;
 	GFile *root;
 
@@ -165,6 +167,9 @@ tracker_file_notifier_set_property (GObject      *object,
 	case PROP_ROOT:
 		notifier->root = g_value_dup_object (value);
 		break;
+	case PROP_RULES_MANAGER:
+		notifier->rules_manager = g_value_dup_object (value);
+		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
 		break;
@@ -178,7 +183,7 @@ file_data_free (TrackerFileData *file_data)
 	g_clear_pointer (&file_data->store_mtime, g_date_time_unref);
 	g_clear_pointer (&file_data->disk_mtime, g_date_time_unref);
 	g_free (file_data->extractor_hash);
-	g_free (file_data->mimetype);
+	g_free (file_data->current_hash);
 	g_slice_free (TrackerFileData, file_data);
 }
 
@@ -403,14 +408,8 @@ update_state (TrackerFileData *data)
 		if (data->in_store) {
 			if (!g_date_time_equal (data->store_mtime, data->disk_mtime)) {
 				data->state = FILE_STATE_UPDATE;
-			} else if (data->mimetype) {
-				const gchar *current_hash;
-
-				current_hash = tracker_extract_module_manager_get_hash (data->mimetype);
-
-				if (g_strcmp0 (data->extractor_hash, current_hash) != 0) {
-					data->state = FILE_STATE_EXTRACTOR_UPDATE;
-				}
+			} else if (g_strcmp0 (data->extractor_hash, data->current_hash) != 0) {
+				data->state = FILE_STATE_EXTRACTOR_UPDATE;
 			}
 		} else {
 			data->state = FILE_STATE_CREATE;
@@ -467,13 +466,20 @@ _insert_store_info (TrackerIndexRoot *root,
                     const gchar      *mimetype,
                     GDateTime        *datetime)
 {
+	TrackerFileNotifier *notifier = root->notifier;
 	TrackerFileData *file_data;
+	const char *current_hash = NULL;
+
+	if (mimetype) {
+		current_hash = tracker_extract_rules_manager_get_hash (notifier->rules_manager,
+		                                                       mimetype);
+	}
 
 	file_data = ensure_file_data (root, file);
 	file_data->in_store = TRUE;
 	file_data->is_dir_in_store = file_type == G_FILE_TYPE_DIRECTORY;
 	file_data->extractor_hash = g_strdup (extractor_hash);
-	file_data->mimetype = g_strdup (mimetype);
+	file_data->current_hash = g_strdup (current_hash);
 	file_data->store_mtime = g_date_time_ref (datetime);
 	update_state (file_data);
 
@@ -798,6 +804,19 @@ tracker_index_root_remove_directory (TrackerIndexRoot *root,
 	GList *l = root->pending_dirs->head, *next;
 	GFile *file;
 
+	while (l) {
+		file = l->data;
+		next = l->next;
+
+		if (g_file_equal (file, directory) ||
+		    g_file_has_prefix (file, directory)) {
+			g_object_unref (file);
+			g_queue_delete_link (root->pending_dirs, l);
+		}
+
+		l = next;
+	}
+
 	if (root->enumerator && root->current_dir &&
 	    (g_file_equal (root->current_dir, directory) ||
 	     g_file_has_prefix (root->current_dir, directory))) {
@@ -813,19 +832,6 @@ tracker_index_root_remove_directory (TrackerIndexRoot *root,
 
 		if (!check_high_water (root->notifier))
 			tracker_index_root_continue (root);
-	}
-
-	while (l) {
-		file = l->data;
-		next = l->next;
-
-		if (g_file_equal (file, directory) ||
-		    g_file_has_prefix (file, directory)) {
-			g_queue_remove (root->pending_dirs, file);
-			g_object_unref (file);
-		}
-
-		l = next;
 	}
 }
 
@@ -1105,15 +1111,10 @@ notifier_queue_root (TrackerFileNotifier   *notifier,
 	TrackerIndexRoot *root;
 
 	root = tracker_index_root_new (notifier, file, flags, root_flags);
+	notifier->pending_index_roots = g_list_append (notifier->pending_index_roots, root);
 
-	if (flags & TRACKER_DIRECTORY_FLAG_PRIORITY) {
-		notifier->pending_index_roots = g_list_prepend (notifier->pending_index_roots, root);
-	} else {
-		notifier->pending_index_roots = g_list_append (notifier->pending_index_roots, root);
-	}
-
-       if (!notifier->current_index_root && !notifier->stopped)
-               notifier_check_next_root (notifier);
+	if (!notifier->current_index_root && !notifier->stopped)
+		notifier_check_next_root (notifier);
 }
 
 static GFileInfo *
@@ -1555,6 +1556,7 @@ tracker_file_notifier_finalize (GObject *object)
 	g_clear_object (&notifier->content_query);
 	g_clear_object (&notifier->deleted_query);
 	g_clear_object (&notifier->file_exists_query);
+	g_clear_object (&notifier->rules_manager);
 
 	if (notifier->monitor) {
 		g_signal_handlers_disconnect_by_data (notifier->monitor, object);
@@ -1684,6 +1686,12 @@ tracker_file_notifier_class_init (TrackerFileNotifierClass *klass)
 		                     G_PARAM_WRITABLE |
 		                     G_PARAM_CONSTRUCT_ONLY |
 		                     G_PARAM_STATIC_STRINGS);
+	props[PROP_RULES_MANAGER] =
+		g_param_spec_object ("rules-manager", NULL, NULL,
+		                     TRACKER_TYPE_EXTRACT_RULES_MANAGER,
+		                     G_PARAM_WRITABLE |
+		                     G_PARAM_CONSTRUCT_ONLY |
+		                     G_PARAM_STATIC_STRINGS);
 
 	g_object_class_install_properties (object_class, N_PROPS, props);
 }
@@ -1695,10 +1703,11 @@ tracker_file_notifier_init (TrackerFileNotifier *notifier)
 }
 
 TrackerFileNotifier *
-tracker_file_notifier_new (TrackerIndexingTree     *indexing_tree,
-                           TrackerSparqlConnection *connection,
-                           TrackerMonitor          *monitor,
-                           GFile                   *root)
+tracker_file_notifier_new (TrackerIndexingTree        *indexing_tree,
+                           TrackerSparqlConnection    *connection,
+                           TrackerMonitor             *monitor,
+                           TrackerExtractRulesManager *rules_manager,
+                           GFile                      *root)
 {
 	g_return_val_if_fail (TRACKER_IS_INDEXING_TREE (indexing_tree), NULL);
 
@@ -1706,6 +1715,7 @@ tracker_file_notifier_new (TrackerIndexingTree     *indexing_tree,
 	                     "indexing-tree", indexing_tree,
 	                     "connection", connection,
 	                     "monitor", monitor,
+	                     "rules-manager", rules_manager,
 	                     "root", root,
 	                     NULL);
 }
@@ -1761,11 +1771,14 @@ tracker_file_notifier_stop (TrackerFileNotifier *notifier)
 			 * resumed, best to queue it again and start from
 			 * scratch.
 			 */
-			notifier_queue_root (notifier,
-			                     notifier->current_index_root->root,
-			                     notifier->current_index_root->flags |
-			                     TRACKER_DIRECTORY_FLAG_PRIORITY,
-			                     notifier->current_index_root->root_flags);
+			TrackerIndexRoot *root;
+
+			root = tracker_index_root_new (notifier,
+			                               notifier->current_index_root->root,
+			                               notifier->current_index_root->flags,
+			                               notifier->current_index_root->root_flags);
+
+			notifier->pending_index_roots = g_list_prepend (notifier->pending_index_roots, root);
 			g_clear_pointer (&notifier->current_index_root,
 			                 tracker_index_root_free);
 		}

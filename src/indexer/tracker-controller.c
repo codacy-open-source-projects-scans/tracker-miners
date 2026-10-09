@@ -97,24 +97,6 @@ tracker_controller_set_property (GObject      *object,
 }
 
 static void
-tracker_controller_get_property (GObject    *object,
-                                 guint       prop_id,
-                                 GValue     *value,
-                                 GParamSpec *pspec)
-{
-	TrackerController *controller = TRACKER_CONTROLLER (object);
-
-	switch (prop_id) {
-	case PROP_INDEXING_TREE:
-		g_value_set_object (value, controller->indexing_tree);
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-		break;
-	}
-}
-
-static void
 add_indexed_directory (TrackerController     *controller,
                        GFile                 *file,
                        TrackerDirectoryFlags  flags)
@@ -232,6 +214,12 @@ mount_point_removed_cb (TrackerController *controller,
 		g_signal_emit (controller, signals[REMOVABLE_POINT_REMOVED], 0, mount_point_file);
 	} else {
 		GList *roots, *l;
+		gboolean mount_point_indexed;
+
+		mount_point_indexed =
+			tracker_indexing_tree_get_root (controller->indexing_tree,
+			                                mount_point_file,
+			                                NULL, NULL) != NULL;
 
 		roots = tracker_indexing_tree_list_roots (controller->indexing_tree);
 
@@ -239,6 +227,24 @@ mount_point_removed_cb (TrackerController *controller,
 			if (!g_file_equal (l->data, mount_point_file) &&
 			    !g_file_has_prefix (l->data, mount_point_file))
 				continue;
+
+			if (!mount_point_indexed) {
+				TrackerDirectoryFlags flags;
+
+				/* The mount point is not indexed itself, but affects
+				 * configured locations. This means the mount point
+				 * is a parent of all indexed folders (or a disjoint
+				 * subset, e.g. /mnt vs. /home). Add the flag to
+				 * preserve data in this case, before proceeding to
+				 * the removal of the affected configured folder(s).
+				 */
+				tracker_indexing_tree_get_root (controller->indexing_tree,
+				                                l->data,
+				                                NULL, &flags);
+				flags |= TRACKER_DIRECTORY_FLAG_PRESERVE;
+				tracker_indexing_tree_add (controller->indexing_tree,
+				                           l->data, flags);
+			}
 
 			tracker_indexing_tree_remove (controller->indexing_tree,
 			                              l->data);
@@ -279,9 +285,6 @@ update_filters (TrackerController   *controller,
 {
 	GStrv strv;
 
-	/* Always ignore hidden */
-	tracker_indexing_tree_set_filter_hidden (indexing_tree, TRUE);
-
 	/* Ignored files */
 	strv = g_settings_get_strv (G_SETTINGS (controller->config), "ignored-files");
 	indexing_tree_update_filter (indexing_tree, TRACKER_FILTER_FILE, strv);
@@ -321,8 +324,8 @@ update_directories_from_new_config (TrackerController *controller,
 
 		path = sl->data;
 
-		/* If we are not still in the list, remove the dir */
-		if (!tracker_string_in_gslist (path, new_dirs)) {
+		/* If we are not yet in the list, remove the dir */
+		if (!g_slist_find_custom (new_dirs, path, (GCompareFunc) g_strcmp0)) {
 			g_autoptr (GFile) file = NULL;
 
 			TRACKER_NOTE (CONFIG, g_message ("  Removing directory: '%s'", path));
@@ -363,7 +366,7 @@ update_directories_from_new_config (TrackerController *controller,
 		path = sl->data;
 
 		/* If we are now in the list, add the dir */
-		if (!tracker_string_in_gslist (path, old_dirs)) {
+		if (!g_slist_find_custom (old_dirs, path, (GCompareFunc) g_strcmp0)) {
 			g_autoptr (GFile) file = NULL;
 
 			TRACKER_NOTE (CONFIG, g_message ("  Adding directory:'%s'", path));
@@ -390,7 +393,9 @@ index_recursive_directories_cb (TrackerConfig     *config,
 	                                    TRUE);
 
 	g_slist_free_full (controller->config_recursive_directories, g_free);
-	controller->config_recursive_directories = tracker_gslist_copy_with_string_data (new_dirs);
+	controller->config_recursive_directories = g_slist_copy_deep (new_dirs,
+	                                                              (GCopyFunc) g_strdup,
+	                                                              NULL);
 }
 
 static void
@@ -409,7 +414,9 @@ index_single_directories_cb (TrackerConfig     *config,
 	                                    FALSE);
 
 	g_slist_free_full (controller->config_single_directories, g_free);
-	controller->config_single_directories = tracker_gslist_copy_with_string_data (new_dirs);
+	controller->config_single_directories = g_slist_copy_deep (new_dirs,
+	                                                           (GCopyFunc) g_strdup,
+	                                                           NULL);
 }
 
 static void
@@ -536,7 +543,9 @@ initialize_from_config (TrackerController *controller)
 	TRACKER_NOTE (CONFIG, g_message ("Setting up directories to iterate from config (IndexSingleDirectory)"));
 
 	dirs = tracker_config_get_index_single_directories (controller->config);
-	controller->config_single_directories = tracker_gslist_copy_with_string_data (dirs);
+	controller->config_single_directories = g_slist_copy_deep (dirs,
+	                                                           (GCopyFunc) g_strdup,
+	                                                           NULL);
 
 	for (; dirs; dirs = dirs->next) {
 		g_autoptr (GFile) file = NULL;
@@ -557,7 +566,9 @@ initialize_from_config (TrackerController *controller)
 	TRACKER_NOTE (CONFIG, g_message ("Setting up directories to iterate from config (IndexRecursiveDirectory)"));
 
 	dirs = tracker_config_get_index_recursive_directories (controller->config);
-	controller->config_recursive_directories = tracker_gslist_copy_with_string_data (dirs);
+	controller->config_recursive_directories = g_slist_copy_deep (dirs,
+	                                                              (GCopyFunc) g_strdup,
+	                                                              NULL);
 
 	for (; dirs; dirs = dirs->next) {
 		g_autoptr (GFile) file = NULL;
@@ -582,7 +593,7 @@ update_indexed_files_from_proxy (TrackerController *controller,
 {
 	TrackerIndexingTree *indexing_tree;
 	const gchar **indexed_uris = NULL;
-	GVariant *v;
+	g_autoptr (GVariant) v = NULL;
 	gint i;
 
 	v = g_dbus_proxy_get_cached_property (proxy, "IndexedLocations");
@@ -670,15 +681,16 @@ on_control_proxy_ready (GObject      *source,
                         gpointer      user_data)
 {
 	TrackerController *controller = user_data;
-	GError *error = NULL;
+	g_autoptr (GDBusProxy) proxy = NULL;
+	g_autoptr (GError) error = NULL;
 
-	controller->control_proxy = g_dbus_proxy_new_finish (res, &error);
+	proxy = g_dbus_proxy_new_finish (res, &error);
 	if (error) {
 		g_critical ("Could not set up proxy: %s", error->message);
-		g_error_free (error);
 		return;
 	}
 
+	controller->control_proxy = g_steal_pointer (&proxy);
 	g_signal_connect (controller->control_proxy, "g-properties-changed",
 	                  G_CALLBACK (proxy_properties_changed_cb), controller);
 	update_indexed_files_from_proxy (controller, controller->control_proxy);
@@ -688,6 +700,7 @@ static void
 log_config (TrackerConfig *config)
 {
 #ifdef G_ENABLE_DEBUG
+// LCOV_EXCL_START
 	if (TRACKER_DEBUG_CHECK (CONFIG)) {
 		GSList *dirs, *l;
 
@@ -714,6 +727,7 @@ log_config (TrackerConfig *config)
 		                                   "enable-monitors") ?
 		           "on" : "off");
 	}
+// LCOV_EXCL_STOP
 #endif
 }
 
@@ -723,6 +737,8 @@ tracker_controller_constructed (GObject *object)
 	TrackerController *controller = TRACKER_CONTROLLER (object);
 
 	G_OBJECT_CLASS (tracker_controller_parent_class)->constructed (object);
+
+	controller->control_proxy_cancellable = g_cancellable_new ();
 
 	controller->storage = tracker_storage_new ();
 	g_signal_connect_object (controller->storage,
@@ -771,7 +787,7 @@ tracker_controller_constructed (GObject *object)
 	                          "org.freedesktop.LocalSearch3.Control",
 	                          "/org/freedesktop/Tracker3/Miner/Files/Proxy",
 	                          "org.freedesktop.Tracker3.Miner.Files.Proxy",
-	                          NULL,
+				  controller->control_proxy_cancellable,
 	                          on_control_proxy_ready,
 	                          controller);
 
@@ -812,7 +828,6 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
 	object_class->set_property = tracker_controller_set_property;
-	object_class->get_property = tracker_controller_get_property;
 	object_class->constructed = tracker_controller_constructed;
 	object_class->finalize = tracker_controller_finalize;
 
@@ -836,7 +851,7 @@ tracker_controller_class_init (TrackerControllerClass *klass)
 		                     "Indexing tree",
 		                     "Indexing tree",
 		                     TRACKER_TYPE_INDEXING_TREE,
-		                     G_PARAM_READWRITE |
+		                     G_PARAM_WRITABLE |
 		                     G_PARAM_CONSTRUCT_ONLY |
 		                     G_PARAM_STATIC_STRINGS);
 	props[PROP_FILES_INTERFACE] =

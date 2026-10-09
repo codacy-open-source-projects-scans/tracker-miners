@@ -26,32 +26,17 @@
 #include <gio/gio.h>
 #include <tinysparql.h>
 
-#include "tracker-task-pool.h"
-
 G_BEGIN_DECLS
 
-/* Task pool */
-#define TRACKER_TYPE_SPARQL_BUFFER         (tracker_sparql_buffer_get_type())
-#define TRACKER_SPARQL_BUFFER(o)           (G_TYPE_CHECK_INSTANCE_CAST ((o), TRACKER_TYPE_SPARQL_BUFFER, TrackerSparqlBuffer))
-#define TRACKER_SPARQL_BUFFER_CLASS(c)     (G_TYPE_CHECK_CLASS_CAST ((c),    TRACKER_TYPE_SPARQL_BUFFER, TrackerSparqlBufferClass))
-#define TRACKER_IS_SPARQL_BUFFER(o)        (G_TYPE_CHECK_INSTANCE_TYPE ((o), TRACKER_TYPE_SPARQL_BUFFER))
-#define TRACKER_IS_SPARQL_BUFFER_CLASS(c)  (G_TYPE_CHECK_CLASS_TYPE ((c),    TRACKER_TYPE_SPARQL_BUFFER))
-#define TRACKER_SPARQL_BUFFER_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o),  TRACKER_TYPE_SPARQL_BUFFER, TrackerSparqlBufferClass))
+typedef enum {
+	TRACKER_SPARQL_BUFFER_CLEANUP_AUDIO,
+} TrackerSparqlBufferCleanup;
 
-typedef struct _TrackerSparqlBuffer TrackerSparqlBuffer;
-typedef struct _TrackerSparqlBufferClass TrackerSparqlBufferClass;
-
-struct _TrackerSparqlBuffer
-{
-	TrackerTaskPool parent_instance;
-};
-
-struct _TrackerSparqlBufferClass
-{
-	TrackerTaskPoolClass parent_class;
-};
-
-GType                tracker_sparql_buffer_get_type (void) G_GNUC_CONST;
+#define TRACKER_TYPE_SPARQL_BUFFER (tracker_sparql_buffer_get_type())
+G_DECLARE_FINAL_TYPE (TrackerSparqlBuffer,
+                      tracker_sparql_buffer,
+                      TRACKER, SPARQL_BUFFER,
+                      GObject)
 
 TrackerSparqlBuffer *tracker_sparql_buffer_new   (TrackerSparqlConnection *connection,
                                                   guint                    limit,
@@ -62,11 +47,9 @@ gboolean             tracker_sparql_buffer_flush (TrackerSparqlBuffer *buffer,
                                                   GAsyncReadyCallback  cb,
                                                   gpointer             user_data);
 
-GPtrArray *          tracker_sparql_buffer_flush_finish (TrackerSparqlBuffer  *buffer,
+gboolean             tracker_sparql_buffer_flush_finish (TrackerSparqlBuffer  *buffer,
                                                          GAsyncResult         *res,
                                                          GError              **error);
-
-gchar *              tracker_sparql_task_get_sparql          (TrackerTask *task);
 
 void tracker_sparql_buffer_log_delete (TrackerSparqlBuffer *buffer,
                                        GFile               *file);
@@ -103,6 +86,13 @@ void tracker_sparql_buffer_log_attributes_update (TrackerSparqlBuffer *buffer,
                                                   const gchar         *content_graph,
                                                   TrackerResource     *file_resource,
                                                   TrackerResource     *graph_resource);
+
+void tracker_sparql_buffer_log_cleanup (TrackerSparqlBuffer        *buffer,
+                                        TrackerSparqlBufferCleanup  cleanup);
+
+gboolean tracker_sparql_buffer_limit_reached (TrackerSparqlBuffer *buffer);
+
+unsigned int tracker_sparql_buffer_get_size (TrackerSparqlBuffer *buffer);
 
 G_END_DECLS
 

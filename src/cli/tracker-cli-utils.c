@@ -23,6 +23,7 @@
 
 #include <glib.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include <gio/gio.h>
 
 #include "tracker-cli-utils.h"
@@ -52,14 +53,30 @@ sort_by_date (gconstpointer a,
 	return 0;
 }
 
+static gboolean
+validate_keyfile (GKeyFile *keyfile)
+{
+	g_autofree char *uri = NULL;
+	g_autoptr (GFile) file = NULL;
+	gboolean valid = FALSE;
+
+	uri = g_key_file_get_string (keyfile, "Report", "Uri", NULL);
+
+	if (uri) {
+		file = g_file_new_for_uri (uri);
+		valid = g_file_query_exists (file, NULL);
+	}
+
+	return valid;
+}
 
 GList *
 tracker_cli_get_error_keyfiles (void)
 {
-	GFile *file;
-	GFileEnumerator *enumerator;
+	g_autoptr (GFile) file = NULL;
+	g_autoptr (GFileEnumerator) enumerator = NULL;
+	g_autofree char *path = NULL;
 	GList *infos = NULL, *keyfiles = NULL, *l;
-	gchar *path;
 
 	path = g_build_filename (g_get_user_cache_dir (),
 	                         "tracker3",
@@ -67,7 +84,6 @@ tracker_cli_get_error_keyfiles (void)
 	                         "errors",
 	                         NULL);
 	file = g_file_new_for_path (path);
-	g_free (path);
 
 	enumerator = g_file_enumerate_children (file,
 	                                        G_FILE_ATTRIBUTE_STANDARD_NAME ","
@@ -92,27 +108,26 @@ tracker_cli_get_error_keyfiles (void)
 	infos = g_list_sort (infos, sort_by_date);
 
 	for (l = infos; l; l = l->next) {
-		GKeyFile *keyfile;
-		GFile *child;
-		GError *error = NULL;
+		g_autoptr (GKeyFile) keyfile = NULL;
+		g_autoptr (GFile) child = NULL;
+		g_autoptr (GError) error = NULL;
+		g_autofree char *child_path = NULL;
 
 		child = g_file_get_child (file, g_file_info_get_name (l->data));
-		path = g_file_get_path (child);
+		child_path = g_file_get_path (child);
 		keyfile = g_key_file_new ();
 
-		if (g_key_file_load_from_file (keyfile, path, 0, &error)) {
-			keyfiles = g_list_prepend (keyfiles, keyfile);
-
+		if (g_key_file_load_from_file (keyfile, child_path, 0, &error)) {
+			if (validate_keyfile (keyfile)) {
+				keyfiles = g_list_prepend (keyfiles, g_steal_pointer (&keyfile));
+			} else if (g_unlink (path) < 0) {
+				g_warning ("Could not delete stale report %s: %m", child_path);
+			}
 		} else {
 			g_warning ("Error retrieving keyfiles: %s", error->message);
-			g_error_free (error);
-			g_key_file_free (keyfile);
 		}
-
-		g_object_unref (child);
 	}
 
-	g_object_unref (enumerator);
 	g_list_free_full (infos, g_object_unref);
 
 	return keyfiles;
@@ -158,11 +173,6 @@ tracker_cli_print_errors (GList    *keyfiles,
 		uri = g_key_file_get_string (keyfile, GROUP, KEY_URI, NULL);
 		file = g_file_new_for_uri (uri);
 
-		if (!g_file_query_exists (file, NULL)) {
-			tracker_error_report_delete (file);
-			continue;
-		}
-
 		if (file_matches (file, terms)) {
 			gchar *sparql = g_key_file_get_string (keyfile, GROUP, KEY_SPARQL, NULL);
 			gchar *message = g_key_file_get_string (keyfile, GROUP, KEY_MESSAGE, NULL);
@@ -206,4 +216,29 @@ tracker_cli_check_inside_build_tree (const gchar* argv0)
 	path = g_file_new_for_path (argv0);
 
 	return g_file_has_prefix (path, build_root);
+}
+
+TrackerSparqlConnection *
+tracker_create_indexer_connection (const char  *mount,
+                                   GError     **error)
+{
+	TrackerSparqlConnection *connection;
+	g_autofree char *dbus_path = NULL;
+
+	if (mount) {
+		g_autofree char *path = NULL, *encoded_uri = NULL;
+		g_autoptr (GFile) mount_root = NULL;
+
+		mount_root = g_file_new_for_commandline_arg (mount);
+		path = g_file_get_path (mount_root);
+		encoded_uri = tracker_encode_for_object_path (path);
+
+		dbus_path = g_strconcat ("/org/freedesktop/LocalSearch3/",
+		                         encoded_uri, NULL);
+	}
+
+	connection = tracker_sparql_connection_bus_new ("org.freedesktop.LocalSearch3",
+	                                                dbus_path, NULL, error);
+
+	return connection;
 }

@@ -38,7 +38,6 @@ typedef struct {
 	TrackerController *controller;
 	GCancellable *cancellable;
 	GDBusMethodInvocation *invocation;
-	TrackerDBusRequest *request;
 	TrackerResource *resource;
 	GList *writeback_handlers;
 	GError *error;
@@ -184,8 +183,7 @@ static WritebackData *
 writeback_data_new (TrackerController       *controller,
                     GList                   *writeback_handlers,
                     TrackerResource         *resource,
-                    GDBusMethodInvocation   *invocation,
-                    TrackerDBusRequest      *request)
+                    GDBusMethodInvocation   *invocation)
 {
 	WritebackData *data;
 
@@ -195,7 +193,6 @@ writeback_data_new (TrackerController       *controller,
 	data->resource = g_object_ref (resource);
 	data->invocation = invocation;
 	data->writeback_handlers = writeback_handlers;
-	data->request = request;
 
 	return data;
 }
@@ -288,12 +285,12 @@ perform_writeback_cb (gpointer user_data)
 	priv->ongoing_tasks = g_list_remove (priv->ongoing_tasks, data);
 
 	if (data->error == NULL) {
+		TRACKER_NOTE (DBUS, g_message ("Writeback operation performed successfully"));
 		g_dbus_method_invocation_return_value (data->invocation, NULL);
 	} else {
+		TRACKER_NOTE (DBUS, g_message ("Writeback operation finished with error: %s", data->error->message));
 		g_dbus_method_invocation_return_gerror (data->invocation, data->error);
 	}
-
-	tracker_dbus_request_end (data->request, NULL);
 
 	g_mutex_lock (&priv->mutex);
 	priv->current = NULL;
@@ -335,8 +332,8 @@ io_writeback_job (GTask        *task,
 			data->error = error;
 		} else {
 			g_set_error_literal (&data->error,
-			                     TRACKER_DBUS_ERROR,
-			                     TRACKER_DBUS_ERROR_UNSUPPORTED,
+			                     G_DBUS_ERROR,
+			                     G_DBUS_ERROR_NOT_SUPPORTED,
 			                     "No writeback modules handled "
 			                     "successfully this file");
 		}
@@ -388,7 +385,6 @@ handle_method_call_writeback (TrackerController     *controller,
                               GVariant              *parameters)
 {
 	TrackerControllerPrivate *priv;
-	TrackerDBusRequest *request;
 	TrackerResource *resource;
 	GHashTableIter iter;
 	gpointer key, value;
@@ -398,7 +394,15 @@ handle_method_call_writeback (TrackerController     *controller,
 	priv = tracker_controller_get_instance_private (controller);
 
 	reset_shutdown_timeout (controller);
-	request = tracker_dbus_request_begin (NULL, "%s", __FUNCTION__);
+
+#ifdef G_ENABLE_DEBUG
+	if (TRACKER_DEBUG_CHECK (STATISTICS)) {
+		g_autofree char *str = NULL;
+
+		str = g_variant_print (parameters, TRUE);
+		g_message ("Received Writeback request, parameters: %s", str);
+	}
+#endif
 
 	resource = tracker_resource_deserialize (g_variant_get_child_value (parameters, 0));
 	if (!resource) {
@@ -406,7 +410,7 @@ handle_method_call_writeback (TrackerController     *controller,
 		                                       G_DBUS_ERROR,
 		                                       G_DBUS_ERROR_INVALID_ARGS,
 		                                       "GVariant does not serialize to a resource");
-		tracker_dbus_request_end (request, NULL);
+		TRACKER_NOTE (DBUS, g_message ("Variant did not serialize to a resource"));
 		return;
 	}
 
@@ -416,7 +420,7 @@ handle_method_call_writeback (TrackerController     *controller,
 		                                       G_DBUS_ERROR,
 		                                       G_DBUS_ERROR_INVALID_ARGS,
 		                                       "Resource does not define rdf:type");
-		tracker_dbus_request_end (request, NULL);
+		TRACKER_NOTE (DBUS, g_message ("Resource does not define rdf:type"));
 		return;
 	}
 
@@ -447,8 +451,7 @@ handle_method_call_writeback (TrackerController     *controller,
 		data = writeback_data_new (controller,
 		                           writeback_handlers,
 		                           resource,
-		                           invocation,
-		                           request);
+		                           invocation);
 		task = g_task_new (controller, data->cancellable, NULL, NULL);
 
 		/* No need to free data here, it's done in the callback. */
@@ -457,10 +460,10 @@ handle_method_call_writeback (TrackerController     *controller,
 		g_object_unref (task);
 	} else {
 		g_dbus_method_invocation_return_error (invocation,
-		                                       TRACKER_DBUS_ERROR,
-		                                       TRACKER_DBUS_ERROR_UNSUPPORTED,
+		                                       G_DBUS_ERROR,
+		                                       G_DBUS_ERROR_NOT_SUPPORTED,
 		                                       "Resource description does not match any writeback modules");
-		tracker_dbus_request_end (request, NULL);
+		TRACKER_NOTE (DBUS, g_message ("No writeback handler"));
 	}
 
 	g_object_unref (resource);
@@ -481,7 +484,10 @@ handle_method_call (GDBusConnection       *connection,
 	if (g_strcmp0 (method_name, "Writeback") == 0) {
 		handle_method_call_writeback (controller, invocation, parameters);
 	} else {
-		g_warning ("Unknown method '%s' called", method_name);
+		g_dbus_method_invocation_return_error (invocation,
+		                                       G_DBUS_ERROR,
+		                                       G_DBUS_ERROR_UNKNOWN_METHOD,
+		                                       "Unknown method '%s' called", method_name);
 	}
 }
 
@@ -530,7 +536,8 @@ bus_name_vanished_cb (GDBusConnection *connection,
 	if (!priv->name_acquired) {
 		GError *error;
 
-		error = g_error_new_literal (TRACKER_DBUS_ERROR, 0,
+		error = g_error_new_literal (G_DBUS_ERROR,
+		                             G_DBUS_ERROR_DISCONNECTED,
 		                             "Could not acquire bus name, "
 		                             "perhaps it's already taken?");
 		controller_notify_main_thread (controller, error);
@@ -619,26 +626,15 @@ tracker_controller_dbus_stop (TrackerController *controller)
 		                                     priv->registration_id);
 	}
 
-	if (priv->bus_name_id != 0) {
-		g_bus_unown_name (priv->bus_name_id);
-	}
-
-	if (priv->old_bus_name_id != 0) {
-		g_bus_unown_name (priv->old_bus_name_id);
-	}
-
-	if (priv->introspection_data) {
-		g_dbus_node_info_unref (priv->introspection_data);
-	}
-
-	if (priv->d_connection) {
-		g_object_unref (priv->d_connection);
-	}
+	g_clear_handle_id (&priv->bus_name_id, g_bus_unown_name);
+	g_clear_handle_id (&priv->old_bus_name_id, g_bus_unown_name);
+	g_clear_pointer (&priv->introspection_data, g_dbus_node_info_unref);
+	g_clear_object (&priv->d_connection);
 }
 
 TrackerController *
-tracker_controller_new (guint             shutdown_timeout,
-                        GError          **error)
+tracker_controller_new (guint    shutdown_timeout,
+                        GError **error)
 {
 	return g_initable_new (TRACKER_TYPE_CONTROLLER,
 	                       NULL, error,
@@ -701,7 +697,7 @@ tracker_controller_start (TrackerController  *controller,
 	priv->modules = g_hash_table_new_full (g_str_hash,
 	                                       g_str_equal,
 	                                       (GDestroyNotify) g_free,
-	                                       NULL);
+	                                       (GDestroyNotify) g_type_module_unuse);
 
 	modules = tracker_writeback_modules_list ();
 
@@ -710,7 +706,7 @@ tracker_controller_start (TrackerController  *controller,
 		const gchar *path;
 
 		path = modules->data;
-		module = tracker_writeback_module_get (path);
+		module = tracker_writeback_module_new (path);
 
 		if (module) {
 			g_hash_table_insert (priv->modules, g_strdup (path), module);

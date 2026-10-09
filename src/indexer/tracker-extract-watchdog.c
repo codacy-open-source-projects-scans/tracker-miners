@@ -33,6 +33,7 @@
 enum {
 	STATUS,
 	LOST,
+	ERROR,
 	N_SIGNALS
 };
 
@@ -95,6 +96,7 @@ on_extract_error_cb (GDBusConnection *conn,
                      GVariant        *parameters,
                      gpointer         user_data)
 {
+	TrackerExtractWatchdog *watchdog = user_data;
 	g_autoptr (GVariant) uri = NULL, message = NULL, extra = NULL, child = NULL;
 	GVariantIter iter;
 	GVariant *value;
@@ -118,12 +120,10 @@ on_extract_error_cb (GDBusConnection *conn,
 	if (g_variant_is_of_type (uri, G_VARIANT_TYPE_STRING) &&
 	    g_variant_is_of_type (message, G_VARIANT_TYPE_STRING) &&
 	    (!extra || g_variant_is_of_type (extra, G_VARIANT_TYPE_STRING))) {
-		g_autoptr (GFile) file = NULL;
-
-		file = g_file_new_for_uri (g_variant_get_string (uri, NULL));
-		tracker_error_report (file,
-		                      g_variant_get_string (message, NULL),
-		                      extra ? g_variant_get_string (extra, NULL) : NULL);
+		g_signal_emit (watchdog, signals[ERROR], 0,
+		               g_variant_get_string (uri, NULL),
+		               g_variant_get_string (message, NULL),
+		               extra ? g_variant_get_string (extra, NULL) : NULL);
 	}
 }
 
@@ -248,6 +248,14 @@ tracker_extract_watchdog_class_init (TrackerExtractWatchdogClass *klass)
 	                              G_SIGNAL_RUN_LAST,
 	                              0, NULL, NULL, NULL,
 	                              G_TYPE_NONE, 0);
+	signals[ERROR] = g_signal_new ("error",
+	                               G_OBJECT_CLASS_TYPE (object_class),
+	                               G_SIGNAL_RUN_LAST,
+	                               0, NULL, NULL, NULL,
+	                               G_TYPE_NONE, 3,
+	                               G_TYPE_STRING,
+	                               G_TYPE_STRING,
+	                               G_TYPE_STRING);
 
 	props[PROP_SPARQL_CONN] =
 		g_param_spec_object ("sparql-conn",
@@ -366,18 +374,18 @@ wait_check_async_cb (GObject      *object,
 	TrackerExtractWatchdog *watchdog = user_data;
 	g_autoptr (GError) error = NULL;
 
-	if (!g_subprocess_wait_check_finish (watchdog->extract_process,
+	if (!g_subprocess_wait_check_finish (G_SUBPROCESS (object),
 	                                     res, &error)) {
 		if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
 			return;
 
 		g_warning ("Extractor subprocess died unexpectedly: %s", error->message);
+		clear_process_state (watchdog);
 		g_signal_emit (watchdog, signals[LOST], 0);
 	} else {
 		g_signal_emit (watchdog, signals[STATUS], 0, "Idle", 1.0, 0);
+		clear_process_state (watchdog);
 	}
-
-	clear_process_state (watchdog);
 }
 
 static GStrv

@@ -177,3 +177,15 @@ tracker_encode_for_object_path (const char *str)
 
 	return g_string_free_and_steal (string);
 }
+
+char *
+tracker_get_cache_dir (void)
+{
+	if (MINER_FS_CACHE_LOCATION[0] == G_DIR_SEPARATOR) {
+		return g_strdup (MINER_FS_CACHE_LOCATION);
+	} else {
+		return g_build_filename (g_get_user_cache_dir (),
+		                         MINER_FS_CACHE_LOCATION,
+		                         "files", NULL);
+	}
+}

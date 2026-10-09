@@ -40,7 +40,6 @@
 #include <gio/gunixmounts.h>
 
 #include "tracker-file-utils.h"
-#include "tracker-type-utils.h"
 
 #define TEXT_SNIFF_SIZE 4096
 
@@ -361,7 +360,7 @@ tracker_path_list_filter_duplicates (GSList      *roots,
 	GSList *l1, *l2;
 	GSList *new_list;
 
-	new_list = tracker_gslist_copy_with_string_data (roots);
+	new_list = g_slist_copy_deep (roots, (GCopyFunc) g_strdup, NULL);
 	l1 = new_list;
 
 	while (l1) {
@@ -466,25 +465,23 @@ tracker_path_list_filter_duplicates (GSList      *roots,
 	return new_list;
 }
 
-const struct {
-	const gchar *symbol;
-	GUserDirectory user_dir;
-} special_dirs[] = {
-	{"&DESKTOP",      G_USER_DIRECTORY_DESKTOP},
-	{"&DOCUMENTS",    G_USER_DIRECTORY_DOCUMENTS},
-	{"&DOWNLOAD",     G_USER_DIRECTORY_DOWNLOAD},
-	{"&MUSIC",        G_USER_DIRECTORY_MUSIC},
-	{"&PICTURES",     G_USER_DIRECTORY_PICTURES},
-	{"&PUBLIC_SHARE", G_USER_DIRECTORY_PUBLIC_SHARE},
-	{"&TEMPLATES",    G_USER_DIRECTORY_TEMPLATES},
-	{"&VIDEOS",       G_USER_DIRECTORY_VIDEOS}
-};
-
-
 static gboolean
 get_user_special_dir_if_not_home (const gchar  *path,
                                   gchar       **special_dir)
 {
+	const struct {
+		const gchar *symbol;
+		GUserDirectory user_dir;
+	} special_dirs[] = {
+		{"&DESKTOP",      G_USER_DIRECTORY_DESKTOP},
+		{"&DOCUMENTS",    G_USER_DIRECTORY_DOCUMENTS},
+		{"&DOWNLOAD",     G_USER_DIRECTORY_DOWNLOAD},
+		{"&MUSIC",        G_USER_DIRECTORY_MUSIC},
+		{"&PICTURES",     G_USER_DIRECTORY_PICTURES},
+		{"&PUBLIC_SHARE", G_USER_DIRECTORY_PUBLIC_SHARE},
+		{"&TEMPLATES",    G_USER_DIRECTORY_TEMPLATES},
+		{"&VIDEOS",       G_USER_DIRECTORY_VIDEOS}
+	};
 	int i;
 	const gchar *real_path;
 	GFile *home, *file;

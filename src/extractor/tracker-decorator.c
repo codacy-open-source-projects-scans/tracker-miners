@@ -193,7 +193,7 @@ tracker_decorator_info_complete (TrackerDecoratorInfo *info,
 
 static void
 tracker_decorator_info_complete_error (TrackerDecoratorInfo *info,
-                                       GError               *error)
+                                       const GError         *error)
 {
 	TrackerDecorator *decorator = info->decorator;
 
@@ -301,6 +301,8 @@ static void
 tracker_decorator_update (TrackerDecorator   *decorator,
                           TrackerExtractInfo *info)
 {
+	TrackerExtractRulesManager *rules_manager =
+		tracker_extract_get_rules_manager (decorator->extractor);
 	TrackerResource *resource;
 	const gchar *graph, *mime_type, *hash, *uri;
 	TrackerBatch *batch;
@@ -308,7 +310,7 @@ tracker_decorator_update (TrackerDecorator   *decorator,
 	batch = tracker_decorator_get_batch (decorator);
 
 	mime_type = tracker_extract_info_get_mimetype (info);
-	hash = tracker_extract_module_manager_get_hash (mime_type);
+	hash = tracker_extract_rules_manager_get_hash (rules_manager, mime_type);
 	graph = tracker_extract_info_get_graph (info);
 	resource = tracker_extract_info_get_resource (info);
 	uri = tracker_extract_info_get_file_id (info);
@@ -343,11 +345,14 @@ tracker_decorator_raise_error (TrackerDecorator *decorator,
 	                          NULL, NULL);
 
 	if (info) {
+		TrackerExtractRulesManager *rules_manager =
+			tracker_extract_get_rules_manager (decorator->extractor);
 		const gchar *mimetype;
 
 		mimetype = g_file_info_get_attribute_string (info,
 		                                             G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
-		hash = tracker_extract_module_manager_get_hash (mimetype);
+		hash = tracker_extract_rules_manager_get_hash (rules_manager,
+		                                               mimetype);
 	}
 
 	batch = tracker_decorator_get_batch (decorator);
@@ -392,6 +397,7 @@ retry_synchronously (TrackerDecorator *decorator,
 		if (error) {
 			g_autofree gchar *sparql = NULL;
 			g_autoptr (GError) inner_error = NULL;
+			g_autoptr (TrackerBatch) error_batch = NULL;
 			TrackerResource *resource;
 			const gchar *graph;
 			GFile *file;
@@ -410,9 +416,9 @@ retry_synchronously (TrackerDecorator *decorator,
 			tracker_decorator_raise_error (decorator, file,
 			                               error->message, sparql);
 
-			batch = g_steal_pointer (&decorator->batch);
-			if (batch)
-				tracker_batch_execute (batch, NULL, &inner_error);
+			error_batch = g_steal_pointer (&decorator->batch);
+			if (error_batch)
+				tracker_batch_execute (error_batch, NULL, &inner_error);
 
 			if (inner_error) {
 				g_autofree char *uri = NULL;
@@ -735,8 +741,11 @@ decorator_maybe_restart_query (TrackerDecorator *decorator)
 }
 
 static void
-ensure_data (TrackerExtractInfo *info)
+ensure_data (TrackerDecorator   *decorator,
+             TrackerExtractInfo *info)
 {
+	TrackerExtractRulesManager *rules_manager =
+		tracker_extract_get_rules_manager (decorator->extractor);
 	TrackerResource *resource, *dataobject;
 	GStrv rdf_types;
 	const gchar *mimetype;
@@ -758,7 +767,8 @@ ensure_data (TrackerExtractInfo *info)
 	tracker_resource_add_uri (dataobject, "nie:interpretedAs",
 	                          tracker_resource_get_identifier (resource));
 
-	rdf_types = tracker_extract_module_manager_get_rdf_types (mimetype);
+	rdf_types = tracker_extract_rules_manager_get_rdf_types (rules_manager,
+	                                                         mimetype);
 
 	for (i = 0; rdf_types[i] != NULL; i++)
 		tracker_resource_add_uri (resource, "rdf:type", rdf_types[i]);
@@ -798,7 +808,7 @@ get_metadata_cb (TrackerExtract   *extract,
                  TrackerDecorator *decorator)
 {
 	g_autoptr (TrackerExtractInfo) info = NULL;
-	GError *error = NULL;
+	g_autoptr (GError) error = NULL;
 
 	info = tracker_extract_file_finish (extract, result, &error);
 
@@ -810,7 +820,7 @@ get_metadata_cb (TrackerExtract   *extract,
 	if (error) {
 		tracker_decorator_info_complete_error (decorator->item, error);
 	} else {
-		ensure_data (info);
+		ensure_data (decorator, info);
 		tracker_decorator_info_complete (decorator->item, info);
 	}
 
@@ -1010,6 +1020,9 @@ tracker_decorator_paused (TrackerMiner *miner)
 	}
 
 	g_clear_handle_id (&decorator->throttle_id, g_source_remove);
+	g_clear_object (&decorator->batch);
+	g_clear_pointer (&decorator->buffer, g_ptr_array_unref);
+	g_clear_pointer (&decorator->commit_buffer, g_ptr_array_unref);
 	decorator_clear_cache (decorator);
 	g_timer_stop (decorator->timer);
 }

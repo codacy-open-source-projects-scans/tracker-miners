@@ -1,11 +1,12 @@
-project('localsearch', 'c',
-        version: '3.11.1',
+project('localsearch', 'c', 'cpp',
+        version: '3.12.0',
         meson_version: '>=0.59')
 
 gnome = import('gnome')
 i18n = import('i18n')
 python = import('python')
 cc = meson.get_compiler('c')
+cpp = meson.get_compiler('cpp')
 
 # This is the X.Y used in -llibtracker-FOO-X.Y
 tracker_api_version = '3.0'
@@ -49,6 +50,7 @@ libzip = dependency('libzip', required: get_option('zip'))
 poppler = dependency('poppler-glib', version: '>= 0.16.0', required: get_option('pdf'))
 totem_plparser = dependency('totem-plparser', required: get_option('playlist'))
 webp = dependency('libwebpdemux', required: get_option('webp'))
+libmediainfo = dependency('libmediainfo', required: get_option('libmediainfo'))
 
 libgif = cc.find_library('gif', required: get_option('gif'))
 libmath = cc.find_library('m', required: false)
@@ -117,12 +119,6 @@ if battery_detection_library_name == 'upower'
     not_found_message: battery_detection_help)
 
   battery_detection_library = upower
-elif battery_detection_library_name == 'hal'
-  hal = dependency('hal',
-    version: '>= 0.5',
-    not_found_message: battery_detection_help)
-
-  battery_detection_library = hal
 endif
 
 ##########################################
@@ -205,7 +201,11 @@ endif
 # Check for tracker-extract: libav
 ####################################################################
 
-avformat = dependency('libavformat', version: '>= 0.8.4', required: get_option('libav'))
+if not libmediainfo.found()
+  avformat = dependency('libavformat', version: '>= 0.8.4', required: get_option('libav'))
+else
+  avformat = disabler()
+endif
 
 ##################################################################
 # Check for libseccomp
@@ -296,6 +296,7 @@ conf.set('HAVE_GUPNP_DLNA', gupnp_dlna.found())
 conf.set('HAVE_FANOTIFY', have_fanotify)
 conf.set('HAVE_BTRFS_IOCTL', have_btrfs_ioctl)
 conf.set_quoted('DOMAIN_PREFIX', get_option('domain_prefix'))
+conf.set10('IS_DEDICATED_SERVICE', get_option('domain_prefix') != 'org.freedesktop')
 
 if get_option('domain_prefix') != 'org.freedesktop'
   if get_option('miner_fs_cache_location') == ''
@@ -454,7 +455,7 @@ if have_tracker_extract
     '    Support zipped EPUB, OOXML & ODF        ' + libzip.found().to_string(),
     '    Support XML / HTML:                     ' + libxml2.found().to_string(),
     '    Support embedded / sidecar XMP:         ' + exempi.found().to_string(),
-    '    Support A/V formats:                    ' + avformat.found().to_string(),
+    '    Support A/V formats:                    ' + (avformat.found() or libmediainfo.found()).to_string(),
     '    Support cue sheet parsing:              ' + libcue.found().to_string(),
     '    Support playlists (w/ Totem):           ' + totem_plparser.found().to_string(),
     '    Support ISO image parsing:              ' + libosinfo.found().to_string(),

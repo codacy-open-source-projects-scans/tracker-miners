@@ -124,18 +124,18 @@ check-commit-log:
 
 .tracker-miners.alpine@common:
   variables:
-    BASE_TAG: '2025-11-15.0'
+    BASE_TAG: '2026-03-02.0'
     FDO_UPSTREAM_REPO: GNOME/localsearch
-    FDO_DISTRIBUTION_PACKAGES: 'alpine-sdk bash-completion dbus py3-dbusmock git json-glib-dev libsoup3-dev py3-gobject3 py3-setuptools py3-tappy py3-pip mandoc asciidoc dbus-dev enca-dev exempi-dev ffmpeg-dev flac-dev gexiv2-dev giflib-dev glib-dev gobject-introspection-dev gst-plugins-good gst-plugins-bad gst-plugins-base-dev gstreamer-dev icu-dev libcue-dev libgsf-dev libgudev-dev libiptcdata-dev libjpeg-turbo-dev libosinfo-dev libpng-dev libseccomp-dev libvorbis-dev libxml2-dev libzip-dev meson poppler-dev shared-mime-info taglib-dev tiff-dev libstemmer-dev tinysparql tinysparql-dev totem-pl-parser-dev tzdata upower-dev zlib-dev'
+    FDO_DISTRIBUTION_PACKAGES: 'alpine-sdk bash-completion dbus py3-dbusmock git json-glib-dev libsoup3-dev py3-gobject3 py3-setuptools py3-tappy py3-pip mandoc asciidoc dbus-dev enca-dev exempi-dev gexiv2-dev giflib-dev glib-dev gobject-introspection-dev gst-plugins-good gst-plugins-bad gst-plugins-base-dev gstreamer-dev icu-dev libcue-dev libgsf-dev libgudev-dev libiptcdata-dev libjpeg-turbo-dev libosinfo-dev libpng-dev libseccomp-dev libxml2-dev libzip-dev meson poppler-dev shared-mime-info taglib-dev tiff-dev libstemmer-dev tinysparql tinysparql-dev totem-pl-parser-dev tzdata upower-dev zlib-dev libmediainfo-dev'
     FDO_DISTRIBUTION_EXEC: |
       pip3 install gcovr &&
       rm -f /usr/share/polkit-1/rules.d/50-default.rules
 
 .tracker-miners.debian@common:
   variables:
-    BASE_TAG: '2025-11-07.0'
+    BASE_TAG: '2026-08-19.0'
     FDO_UPSTREAM_REPO: GNOME/localsearch
-    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates python3-dbusmock python3-tap python3-pip umockdev libumockdev-dev upower asciidoc-base git libavcodec-dev libavformat-dev libavutil-dev libzip-dev man-db'
+    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates python3-dbusmock python3-tap python3-pip umockdev libumockdev-dev upower asciidoc-base git libzip-dev libmediainfo-dev man-db gstreamer1.0-plugins-bad'
     FDO_DISTRIBUTION_EXEC: |
       export DEBIAN_FRONTEND=noninteractive &&
       sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources &&
@@ -259,6 +259,8 @@ build-fedora@x86_64:
     - .tracker-miners.fedora:latest@x86_64
   needs:
     - build-fedora-container@x86_64
+  variables:
+    BUILD_ARGS: '-Dlibmediainfo=disabled'
   <<: *build
 
 build-fedora-rawhide@x86_64:
@@ -268,6 +270,8 @@ build-fedora-rawhide@x86_64:
   needs:
     - build-fedora-rawhide-container@x86_64
   allow_failure: true
+  variables:
+    BUILD_ARGS: '-Dlibmediainfo=disabled'
   <<: *build
 
 build-fedora@aarch64:
@@ -277,6 +281,8 @@ build-fedora@aarch64:
   needs:
     - build-fedora-container@aarch64
   allow_failure: true
+  variables:
+    BUILD_ARGS: '-Dlibmediainfo=disabled'
   <<: *build
 
 build-alpine-latest@x86_64:
@@ -314,7 +320,7 @@ build-debian-stable@x86_64:
       unset $(env|grep -o '^CI_[^=]*')
       mkdir tmp
       export TMPDIR=`pwd`/tmp
-      meson devenv dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 meson test --suite localsearch --print-errorlogs --num-processes 4 --timeout-multiplier ${MESON_TEST_TIMEOUT_MULTIPLIER} ${MESON_TEST_EXTRA_ARGS}
+      meson devenv dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 meson test --suite localsearch --print-errorlogs --num-processes 1 --timeout-multiplier ${MESON_TEST_TIMEOUT_MULTIPLIER} ${MESON_TEST_EXTRA_ARGS}
 
   after_script:
     - pushd build
@@ -433,7 +439,7 @@ test-dist:
       unset $(env|grep -o '^CI_[^=]*')
       mkdir tmp
       export TMPDIR=`pwd`/tmp
-      meson devenv dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 meson test --suite localsearch --print-errorlogs --num-processes 4 --timeout-multiplier ${MESON_TEST_TIMEOUT_MULTIPLIER} ${MESON_TEST_EXTRA_ARGS}
+      meson devenv dbus-run-session -- env LANG=C.UTF-8 LC_ALL=C.UTF-8 meson test --suite localsearch --print-errorlogs --num-processes 1 --timeout-multiplier ${MESON_TEST_TIMEOUT_MULTIPLIER} ${MESON_TEST_EXTRA_ARGS}
 
   artifacts:
     expire_in: 1 day
@@ -547,6 +553,46 @@ coverity:
       --form description="gitlab CI build"
   only:
     - main
+
+asan:
+  extends:
+    - .fdo.distribution-image@fedora
+    - .tracker-miners.fedora:latest@x86_64
+  stage: analysis
+  needs:
+    - build-fedora-container@x86_64
+  script:
+    - git clone https://gitlab.gnome.org/GNOME/tinysparql.git
+    - pushd tinysparql; meson setup build --libdir lib64 --prefix=/usr -Ddocs=false; ninja -C build install; popd
+    - meson setup --buildtype=debug build -Db_sanitize=address -Dseccomp=false -Dlandlock=disabled
+    - meson compile -C build
+    # Add verify_asan_link_order=0 over asan defaults, for functional tests with python interpreter
+    - TRACKER_TESTS_AWAIT_TIMEOUT=30 LOCALSEARCH_DEBUG=tests ASAN_OPTIONS=verify_asan_link_order=0:halt_on_error=1:abort_on_error=1:print_summary=1 dbus-run-session meson test -C build -t $MESON_TEST_TIMEOUT_MULTIPLIER --num-processes 1 --print-errorlogs
+  artifacts:
+    expire_in: 1 day
+    when: always
+    paths:
+    - build/meson-logs/*.txt
+
+ubsan:
+  extends:
+    - .fdo.distribution-image@fedora
+    - .tracker-miners.fedora:latest@x86_64
+  stage: analysis
+  needs:
+    - build-fedora-container@x86_64
+  script:
+    - git clone https://gitlab.gnome.org/GNOME/tinysparql.git
+    - pushd tinysparql; meson setup build --libdir lib64 --prefix=/usr -Ddocs=false; ninja -C build install; popd
+    - meson setup --buildtype=debug build -Db_sanitize=undefined -Dseccomp=false -Dlandlock=disabled
+    - meson compile -C build
+    # Add verify_asan_link_order=0 over asan defaults, for functional tests with python interpreter
+    - TRACKER_TESTS_AWAIT_TIMEOUT=30 LOCALSEARCH_DEBUG=tests dbus-run-session meson test -C build -t $MESON_TEST_TIMEOUT_MULTIPLIER --num-processes 1 --print-errorlogs
+  artifacts:
+    expire_in: 1 day
+    when: always
+    paths:
+    - build/meson-logs/*.txt
 
 pages:
   extends:

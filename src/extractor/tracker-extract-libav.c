@@ -421,12 +421,31 @@ tracker_extract_get_metadata (TrackerExtractInfo  *info,
 				                        tag->value,
 				                        "https://musicbrainz.org/doc/Release_Group");
 			}
+
+			if ((tag = find_tag (format, audio_stream, NULL, "disc_subtitle"))) {
+				tracker_resource_set_string (album_disc, "nie:title", tag->value);
+			}
 		}
 
 		if ((tag = find_tag (format, audio_stream, NULL, "cuesheet"))) {
 			cue_sheet = tracker_cue_sheet_parse (tag->value);
 		} else {
 			cue_sheet = tracker_cue_sheet_guess_from_uri (uri);
+		}
+
+		if ((tag = find_tag (format, video_stream, NULL, "lyrics"))) {
+			g_autoptr (TrackerResource) lyrics = NULL;
+
+			lyrics = tracker_resource_new (NULL);
+			tracker_resource_add_uri (lyrics, "rdf:type", "nmm:SynchronizedText");
+			tracker_resource_set_string (lyrics, "nie:plainTextContent", tag->value);
+			tracker_resource_add_relation (metadata, "nmm:lyrics", lyrics);
+		}
+
+		if ((tag = find_tag (format, audio_stream, NULL, "isrc"))) {
+			tracker_resource_set_string (metadata,
+						     "nmm:internationalStandardRecordingCode",
+						     tag->value);
 		}
 
 		if (cue_sheet) {

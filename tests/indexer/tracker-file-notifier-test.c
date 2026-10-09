@@ -277,9 +277,9 @@ static void
 test_common_context_setup (TestCommonContext *fixture,
                            gconstpointer      data)
 {
-	TrackerMonitor *monitor;
-	GFile *data_loc, *ontology;
-	GError *error = NULL;
+	g_autoptr (TrackerMonitor) monitor = NULL;
+	g_autoptr (GFile) data_loc = NULL, ontology = NULL;
+	g_autoptr (GError) error = NULL;
 
 	fixture->test_path = g_build_filename (g_get_tmp_dir (),
 	                                       "tracker-test-XXXXXX",
@@ -300,14 +300,15 @@ test_common_context_setup (TestCommonContext *fixture,
 	CREATE_FOLDER (fixture, "non-indexed");
 
 	fixture->indexing_tree = tracker_indexing_tree_new ();
-	tracker_indexing_tree_set_filter_hidden (fixture->indexing_tree, TRUE);
 
 	monitor = tracker_monitor_new (NULL);
 
 	fixture->main_loop = g_main_loop_new (NULL, FALSE);
 	fixture->notifier = tracker_file_notifier_new (fixture->indexing_tree,
 	                                               fixture->connection,
-	                                               monitor, NULL);
+	                                               monitor,
+	                                               NULL,
+	                                               NULL);
 
 	g_signal_connect (fixture->notifier, "file-created",
 	                  G_CALLBACK (file_notifier_file_created_cb), fixture);
@@ -319,8 +320,6 @@ test_common_context_setup (TestCommonContext *fixture,
 	                  G_CALLBACK (file_notifier_file_moved_cb), fixture);
 	g_signal_connect (fixture->notifier, "finished",
 	                  G_CALLBACK (file_notifier_finished_cb), fixture);
-
-	g_clear_object (&monitor);
 }
 
 static void
@@ -331,6 +330,7 @@ test_common_context_teardown (TestCommonContext *fixture,
 	g_list_free (fixture->ops);
 
 	if (fixture->notifier) {
+		g_signal_handlers_disconnect_by_data (fixture->notifier, fixture);
 		g_object_unref (fixture->notifier);
 	}
 
@@ -440,6 +440,10 @@ test_common_context_expect_results (TestCommonContext   *fixture,
 	}
 
 	g_assert_cmpint (g_list_length (fixture->ops), ==, 0);
+
+	fixture->expect_finished = 0;
+	fixture->expect_n_results = 0;
+	fixture->expect_results = NULL;
 }
 
 static void

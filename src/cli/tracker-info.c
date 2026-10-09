@@ -117,15 +117,17 @@ accumulate_value (GHashTable  *values,
                   const gchar *pred,
                   const gchar *object)
 {
+	gboolean is_first;
 	GList *list;
 
 	list = g_hash_table_lookup (values, pred);
+	is_first = list == NULL;
 
-	if (!g_list_find_custom (list, object, (GCompareFunc) g_strcmp0)) {
-		g_hash_table_steal (values, pred);
-		list = g_list_prepend (list, g_strdup (object));
+	if (!g_list_find_custom (list, object, (GCompareFunc) g_strcmp0))
+		list = g_list_append (list, g_strdup (object));
+
+	if (is_first)
 		g_hash_table_insert (values, g_strdup (pred), list);
-	}
 }
 
 static void
@@ -338,19 +340,7 @@ info_run (void)
 
 	tracker_term_pipe_to_pager ();
 
-	if (mount) {
-		g_autofree char *path = NULL, *encoded_uri = NULL;
-
-		mount_root = g_file_new_for_commandline_arg (mount);
-		path = g_file_get_path (mount_root);
-		encoded_uri = tracker_encode_for_object_path (path);
-
-		dbus_path = g_strconcat ("/org/freedesktop/LocalSearch3/",
-		                         encoded_uri, NULL);
-	}
-
-	connection = tracker_sparql_connection_bus_new ("org.freedesktop.LocalSearch3",
-	                                                dbus_path, NULL, &error);
+	connection = tracker_create_indexer_connection (mount, &error);
 
 	if (!connection) {
 		g_printerr ("%s: %s\n",

@@ -823,6 +823,92 @@ class MinerCrawlTest(fixtures.TrackerMinerTest):
         unpacked_result = [r[0] for r in result]
         self.assertIn(self.uri("test-monitored/file1.txt"), unpacked_result)
 
+    def test_23_move_recursive_directory_from_hidden_to_visible_and_back_interrupted(self):
+        """
+        Move a directory from unmonitored to monitored, and back, but
+        ensure the crawling operation is interrupted
+        """
+        file = self.path("test-monitored/.dir/file.txt")
+        dest_file = self.path("test-monitored/dir/file2.txt")
+        source = self.path("test-monitored/.dir")
+        subdir = self.path("test-monitored/.dir/subdir")
+        dest = self.path("test-monitored/dir")
+
+        # Queue a substantial amount of changes, so there's larger guarantees
+        N_SUBDIRS = 5000
+
+        # Create a file to detect that the directory was moved
+        os.mkdir(source)
+        with open(file, "w") as f:
+            f.write(DEFAULT_TEXT)
+
+        # Add a decent amount of files in a subdir
+        os.mkdir(subdir)
+        for i in range(N_SUBDIRS):
+            child = os.path.join(subdir, "dir-%d" % i)
+            os.mkdir(child)
+
+        # Rename the dir and expect our canary file to be indexed
+        # This should still be in the middle of operations, since
+        # a subdir with enough amount of data has to be crawled
+        check_file = self.uri("test-monitored/dir/file.txt")
+        with self.tracker.await_insert(
+            fixtures.FILESYSTEM_GRAPH, f"nie:url <{check_file}>", timeout=cfg.AWAIT_TIMEOUT
+        ):
+            os.rename(source, dest)
+
+        # Avoid checks to ensure the indexer didn't complete
+
+        file_id = self.tracker.get_content_resource_id(self.uri("test-monitored/dir"))
+        with self.tracker.await_delete(
+            fixtures.FILESYSTEM_GRAPH, file_id, timeout=cfg.AWAIT_TIMEOUT
+        ):
+            os.rename(dest, source)
+
+        result = self.__get_text_documents()
+        # Default test data only
+        self.assertEqual(len(result), 3)
+        unpacked_result = [r[0] for r in result]
+        self.assertIn(self.uri("test-monitored/file1.txt"), unpacked_result)
+
+    def test_24_ignored_text_file(self):
+        """
+        Ensure that text files not in allow list setting are not reindexed
+        across restarts
+        """
+        source = os.path.join(self.workdir, "test-no-monitored", "file0.txt")
+        dest = os.path.join(self.workdir, "test-monitored", "file0.rq")
+        self.destUri = self.uri("test-monitored/file0.rq")
+
+        with self.await_document_inserted(dest) as resource:
+            shutil.copyfile(source, dest)
+
+        # Verify if miner indexed this file.
+        result = self.__get_text_documents()
+        self.assertEqual(len(result), 4)
+        unpacked_result = [r[0] for r in result]
+        self.assertIn(self.uri("test-monitored/file0.rq"), unpacked_result)
+
+        self.changedFiles = []
+
+        # Ensure that indexer restart triggers no further changes on the file
+        def count_events_cb(notifier, service, graph, events):
+            for ev in events:
+                self.changedFiles.append(ev.get_urn())
+
+        notifier = self.tracker.conn.create_notifier()
+        notifier.connect('events', count_events_cb)
+
+        self.sandbox.stop_daemon('org.freedesktop.LocalSearch3')
+
+        try:
+            dest2 = os.path.join(self.workdir, "test-monitored", "file0.txt")
+
+            with self.await_document_inserted(dest2) as resource:
+                shutil.copyfile(source, dest2)
+        finally:
+            self.assertNotIn(self.uri("test-monitored/file0.rq"), self.changedFiles)
+
 class IndexedFolderTest(fixtures.TrackerMinerTest):
     """
     Tests handling of data across multiple data sources

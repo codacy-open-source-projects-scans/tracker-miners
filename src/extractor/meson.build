@@ -17,7 +17,7 @@ modules = [
 ]
 
 if get_option('abiword')
-  modules += [['extract-abw', 'tracker-extract-abw.c', ['10-abw.rule'], [tracker_miners_common_dep]]]
+  modules += [['extract-abw', 'tracker-extract-abw.c', ['10-abw.rule'], [libxml2, tracker_miners_common_dep]]]
 endif
 
 if libgsf.found()
@@ -35,9 +35,9 @@ if libzip.found()
   tracker_extract_zip_dep = declare_dependency(
     link_with: libtracker_extract_zip)
 
-  modules += [['extract-epub', 'tracker-extract-epub.c', ['10-epub.rule'], [tracker_extract_zip_dep]]]
-  modules += [['extract-msoffice-xml', 'tracker-extract-msoffice-xml.c', ['11-msoffice-xml.rule'], [tracker_extract_zip_dep]]]
-  modules += [['extract-oasis', 'tracker-extract-oasis.c', ['10-oasis.rule'], [tracker_extract_zip_dep]]]
+  modules += [['extract-epub', 'tracker-extract-epub.c', ['10-epub.rule'], [libxml2, tracker_extract_zip_dep]]]
+  modules += [['extract-msoffice-xml', 'tracker-extract-msoffice-xml.c', ['11-msoffice-xml.rule'], [libxml2, tracker_extract_zip_dep]]]
+  modules += [['extract-oasis', 'tracker-extract-oasis.c', ['10-oasis.rule'], [libxml2, tracker_extract_zip_dep]]]
 endif
 
 if have_gexiv2
@@ -113,6 +113,18 @@ if webp.found()
   modules += [['extract-webp', 'tracker-extract-webp.c', ['10-webp.rule'], [webp, tracker_miners_common_dep]]]
 endif
 
+if libmediainfo.found()
+  rules = ['15-libmediainfo-guess.rule', '90-libmediainfo-audio-generic.rule', '90-libmediainfo-video-generic.rule']
+  extract_mediainfo_files = [
+    'tracker-extract-mediainfo.cpp',
+    'tracker-cue-sheet.c',
+  ]
+  if gupnp_dlna.found()
+    extract_mediainfo_files += ['tracker-gupnp-mediainfo.cpp']
+  endif
+  modules += [['extract-mediainfo', extract_mediainfo_files, rules, [libmediainfo, libcue, gupnp_dlna, tracker_miners_common_dep]]]
+endif
+
 enabled_rule_files = []
 
 foreach module : modules
@@ -129,7 +141,7 @@ foreach module : modules
     install_dir: tracker_extract_modules_dir,
     install_rpath: tracker_internal_libs_dir)
 
-  hash = run_command('calculate-hash.sh', [sources] + files_extract, check: true)
+  hash = run_command('calculate-hash.sh', [sources] + files_extract + files_identifier, check: true)
 
   foreach rule : rules
     configure_file(input: rule,
@@ -154,6 +166,7 @@ tracker_extract_sources = [
   'tracker-extract-controller.c',
   'tracker-extract-persistence.c',
   'tracker-main.c',
+  'tracker-module-manager.c',
   extract_resources,
 ]
 

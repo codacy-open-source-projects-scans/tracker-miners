@@ -41,6 +41,35 @@
                          FAN_MOVED_TO | FAN_MOVED_FROM | FAN_MOVE_SELF | \
                          FAN_EVENT_ON_CHILD | FAN_ONDIR)
 
+/* The event_len field is the first u32 in the struct. This
+ * define exists to read this avoiding memory alignment issues
+ */
+#if (G_BYTE_ORDER == G_LITTLE_ENDIAN)
+#define TRACKER_FAN_EVENT_LEN(meta)	\
+	(((char *) meta)[0] << 0 |	\
+	 ((char *) meta)[1] << 8 |	\
+	 ((char *) meta)[2] << 16 |	\
+	 ((char *) meta)[3] << 24)
+#elif (G_BYTE_ORDER == G_BIG_ENDIAN)
+#define TRACKER_FAN_EVENT_LEN(meta)	\
+	(((char *) meta)[0] << 24 |	\
+	 ((char *) meta)[1] << 16 |	\
+	 ((char *) meta)[2] << 8 |	\
+	 ((char *) meta)[3] << 0)
+#else
+#error "Can’t figure endianness"
+#endif
+
+#define TRACKER_FAN_EVENT_NEXT(meta, len)				\
+	((len) -= TRACKER_FAN_EVENT_LEN (meta),				\
+	 (struct fanotify_event_metadata*) (((char *) (meta)) + TRACKER_FAN_EVENT_LEN (meta)))
+
+#define TRACKER_FAN_EVENT_OK(meta, len)					\
+	((long) (len) >= (long) FAN_EVENT_METADATA_LEN &&		\
+	 TRACKER_FAN_EVENT_LEN (meta) >= (long) FAN_EVENT_METADATA_LEN && \
+	 TRACKER_FAN_EVENT_LEN (meta) <= (long) (len))
+
+
 typedef enum {
 	EVENT_NONE,
 	EVENT_CREATE,
@@ -48,7 +77,19 @@ typedef enum {
 	EVENT_ATTRIBUTES_UPDATE,
 	EVENT_DELETE,
 	EVENT_MOVE,
+	N_EVENTS,
 } EventType;
+
+static const char *event_names[] = {
+	"NONE",
+	"CREATE",
+	"UPDATE",
+	"ATTRIBUTES_UPDATE",
+	"DELETE",
+	"MOVE",
+};
+
+G_STATIC_ASSERT (G_N_ELEMENTS (event_names) == N_EVENTS);
 
 typedef struct {
 	EventType type;
@@ -99,9 +140,6 @@ enum {
 enum {
 	PROP_0,
 	PROP_ENABLED,
-	PROP_LIMIT,
-	PROP_COUNT,
-	PROP_IGNORED,
 };
 
 static GInitableIface *initable_parent_iface = NULL;
@@ -114,25 +152,6 @@ G_DEFINE_TYPE_WITH_CODE (TrackerMonitorFanotify, tracker_monitor_fanotify,
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE,
                                                 tracker_monitor_fanotify_initable_iface_init))
 
-static inline const char *
-event_type_to_string (EventType evtype)
-{
-	switch (evtype) {
-	case EVENT_CREATE:
-		return "CREATE";
-	case EVENT_UPDATE:
-		return "UPDATE";
-	case EVENT_ATTRIBUTES_UPDATE:
-		return "ATTRIBUTES_UPDATE";
-	case EVENT_DELETE:
-		return "DELETE";
-	case EVENT_MOVE:
-		return "MOVE";
-	default:
-		g_assert_not_reached ();
-	}
-}
-
 static void
 emit_event (TrackerMonitorFanotify *monitor,
             EventType               evtype,
@@ -140,11 +159,13 @@ emit_event (TrackerMonitorFanotify *monitor,
             GFile                  *other_file,
             gboolean                is_directory)
 {
+	g_assert (evtype < N_EVENTS);
+
 	if (evtype == EVENT_MOVE) {
 		TRACKER_NOTE (MONITORS,
 		              g_message ("Received monitor event:%d (%s) for files '%s'->'%s'",
 		                         evtype,
-		                         event_type_to_string (evtype),
+		                         event_names[evtype],
 		                         g_file_peek_path (file),
 		                         g_file_peek_path (other_file)));
 		tracker_monitor_emit_moved (TRACKER_MONITOR (monitor),
@@ -153,7 +174,7 @@ emit_event (TrackerMonitorFanotify *monitor,
 		TRACKER_NOTE (MONITORS,
 		              g_message ("Received monitor event:%d (%s) for %s:'%s'",
 		                         evtype,
-		                         event_type_to_string (evtype),
+		                         event_names[evtype],
 		                         is_directory ? "directory" : "file",
 		                         g_file_peek_path (file)));
 		switch (evtype) {
@@ -334,20 +355,22 @@ fanotify_events_cb (int          fd,
                     gpointer     user_data)
 {
 	TrackerMonitorFanotify *monitor = user_data;
-	struct fanotify_event_metadata buf[200], *event;
+	struct fanotify_event_metadata buf[200], *cur;
 	ssize_t len;
 
 	len = read (monitor->fanotify_fd, buf, sizeof (buf));
+	cur = buf;
 
-	event = buf;
-
-	while (FAN_EVENT_OK (event, len)) {
+	while (TRACKER_FAN_EVENT_OK (cur, len)) {
+		g_autofree struct fanotify_event_metadata *event = NULL;
 		struct fanotify_event_info_fid *fid;
 		HandleData *handle;
 		MonitoredFile *data;
 		const gchar *file_name;
 		GBytes *fid_bytes;
 		GFile *child;
+
+		event = g_memdup2 (cur, TRACKER_FAN_EVENT_LEN (cur));
 
 		/* Check that run-time and compile-time structures match. */
 		if (event->vers != FANOTIFY_METADATA_VERSION) {
@@ -401,7 +424,7 @@ fanotify_events_cb (int          fd,
 		g_object_unref (child);
 
 	cont:
-		event = FAN_EVENT_NEXT (event, len);
+		cur = TRACKER_FAN_EVENT_NEXT (cur, len);
 	}
 
 	flush_moved_file_event (monitor);
@@ -537,22 +560,6 @@ tracker_monitor_fanotify_finalize (GObject *object)
 }
 
 static void
-tracker_monitor_fanotify_set_property (GObject      *object,
-                                       guint         prop_id,
-                                       const GValue *value,
-                                       GParamSpec   *pspec)
-{
-	switch (prop_id) {
-	case PROP_ENABLED:
-		tracker_monitor_set_enabled (TRACKER_MONITOR (object),
-		                             g_value_get_boolean (value));
-		break;
-	default:
-		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-	}
-}
-
-static void
 tracker_monitor_fanotify_get_property (GObject      *object,
                                        guint         prop_id,
                                        GValue       *value,
@@ -563,15 +570,6 @@ tracker_monitor_fanotify_get_property (GObject      *object,
 	switch (prop_id) {
 	case PROP_ENABLED:
 		g_value_set_boolean (value, monitor->enabled);
-		break;
-	case PROP_LIMIT:
-		g_value_set_uint (value, monitor->limit);
-		break;
-	case PROP_COUNT:
-		g_value_set_uint (value, tracker_monitor_get_count (TRACKER_MONITOR (object)));
-		break;
-	case PROP_IGNORED:
-		g_value_set_uint (value, monitor->ignored);
 		break;
 	default:
 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -932,7 +930,6 @@ tracker_monitor_fanotify_class_init (TrackerMonitorFanotifyClass *klass)
 	monitor_class = TRACKER_MONITOR_CLASS (klass);
 
 	object_class->finalize = tracker_monitor_fanotify_finalize;
-	object_class->set_property = tracker_monitor_fanotify_set_property;
 	object_class->get_property = tracker_monitor_fanotify_get_property;
 
 	monitor_class->add = tracker_monitor_fanotify_add;
@@ -944,9 +941,6 @@ tracker_monitor_fanotify_class_init (TrackerMonitorFanotifyClass *klass)
 	monitor_class->get_count = tracker_monitor_fanotify_get_count;
 
 	g_object_class_override_property (object_class, PROP_ENABLED, "enabled");
-	g_object_class_override_property (object_class, PROP_LIMIT, "limit");
-	g_object_class_override_property (object_class, PROP_COUNT, "count");
-	g_object_class_override_property (object_class, PROP_IGNORED, "ignored");
 }
 
 static void
